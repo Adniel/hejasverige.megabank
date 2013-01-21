@@ -1,0 +1,23 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:five="http://namespaces.zope.org/five"
+    xmlns:grok="http://namespaces.zope.org/grok"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    i18n_domain="hejasverige.megabank">
+  <includeDependencies package="." />
+
+  <include package="five.grok" />
+  <five:registerPackage package="." initialize=".initialize" />
+  <grok:grok package="." />
+  <interface interface="hejasverige.megabank.interfaces.IMyAccountFolder" />
+  <genericsetup:registerProfile
+      name="default"
+      title="Heja Sverige MegaBank"
+      directory="profiles/default"
+      description="Installs the Megabank Views"
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      />
+  <!-- -*- extra stuff goes here -*- -->
+  
+</configure>
