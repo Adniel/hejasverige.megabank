@@ -4,8 +4,8 @@ from five import grok
 from plone import api
 from DateTime import DateTime
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
+from hejasverige.megabank import _
 
-#from hejasverige.megabank import NevosoftApiMessageFactory as _
 #from StringIO import StringIO
 
 # Add interface hejasverige.megabank.interfaces.IMyAccountFolder to folder
@@ -53,48 +53,64 @@ class ListTransactionsView(grok.View):
         from plone.registry.interfaces import IRegistry
         registry = getUtility(IRegistry)
 
-        from hejasverige.settings.interfaces import IHejaSverigeSettings
-        settings = registry.forInterface(IHejaSverigeSettings)
+        from hejasverige.megabank.interfaces import IMegabankSettings
+        settings = registry.forInterface(IMegabankSettings)
         mburl = settings.megabank_url
         mbuser = settings.megabank_user
         mbpassword = settings.megabank_password
 
-        #user = api.user.get_current()
-        user = '7810095039'    
-        logger = logging.getLogger("@@check-user-account")
-        logger.info('Check user account (' + str(user) + ')')
-        logger.info('Calling MegaBank')
-        logger.info('User: ' + mbuser)
-        logger.info('Password: ' + mbpassword)
-        logger.info('Url: ' + mburl)                
+        user = api.user.get_current()
+        pid = user.getProperty('personal_id')
 
-        auth = HTTPBasicAuth(mbuser, mbpassword)
+        self.hasTransactions = True
 
-        r = requests.get(mburl + '/transactions/' + str(user), auth=auth)
-        #f = StringIO(r.text)
-        #tree = etree.parse(f)
-        
-
-        #dct = json.loads(r.json, object_hook=datetime_parser)
         today = DateTime().strftime('%Y-%m-%d %H:%M:%S')
         self.now = today #api.portal.get_localized_time(datetime=today)
 
-        items = []
-        for item in r.json:
-            for k in item.keys():
-                p = re.compile('/Date\(')
-                m = p.match(str(item[k]))
-                if m:
-                    #item[k] = str(self.decode_json_date(item[k]))
-                    item[k] = datetime.datetime(1970, 1, 1) + \
-                        datetime.timedelta(milliseconds=int(re.findall(r'\d+', item[k])[0])) + \
-                        datetime.timedelta(hours=int(re.findall(r'\d+', item[k])[1][:2]))
+        if pid:
 
-            logger.info('Current item: ' + str(item['ID']))
-            items.append(item)
+            url = mburl + '/transactions/' + str(pid)
 
 
-        self.transactions =  items
+            logger = logging.getLogger("@@list-transactions")
+            logger.info('Check user account (' + str(user)+ ')')        
+            logger.info('Calling MegaBank')
+            logger.info('User: ' + mbuser)
+            logger.info('Password: ' + mbpassword)
+            logger.info('Url: ' + url)               
+
+            auth = HTTPBasicAuth(mbuser, mbpassword)
+
+            r = requests.get(url, auth=auth)
+            #f = StringIO(r.text)
+            #tree = etree.parse(f)
+            if r.text:
+                payload = json.loads(r.text)
+
+                #dct = json.loads(r.json, object_hook=datetime_parser)
+                print r.text
+
+                items = []
+                for item in payload:
+                    for k in item.keys():
+                        p = re.compile('/Date\(')
+                        m = p.match(str(item[k]))
+                        if m:
+                            #item[k] = str(self.decode_json_date(item[k]))
+                            item[k] = datetime.datetime(1970, 1, 1) + \
+                                datetime.timedelta(milliseconds=int(re.findall(r'\d+', item[k])[0])) + \
+                                datetime.timedelta(hours=int(re.findall(r'\d+', item[k])[1][:2]))
+
+                    logger.info('Current item: ' + str(item['ID']))
+                    items.append(item)
+
+
+                self.transactions =  items
+            else:
+                self.hasTransactions = False
+        else:
+            self.hasTransactions = False
+
         #import pdb ; pdb.set_trace()
 
         #return self.template()

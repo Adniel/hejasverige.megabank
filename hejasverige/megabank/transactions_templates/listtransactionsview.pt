@@ -43,50 +43,54 @@
         <div metal:use-macro="here/batch_macros/macros/navigation" />
 
     </div-->
+    <tal:transactions condition="view/hasTransactions">
+      <div tal:define="liste view/transactions;
+                   Batch python:modules['Products.CMFPlone'].Batch;
+                   b_size python:20;
+                   b_start python:0;
+                   b_start request/b_start | b_start;
+                   batch python:Batch(liste, b_size, int(b_start), orphan=1);"
+           tal:condition="liste">
 
-    <div tal:define="liste view/transactions;
-                 Batch python:modules['Products.CMFPlone'].Batch;
-                 b_size python:20;
-                 b_start python:0;
-                 b_start request/b_start | b_start;
-                 batch python:Batch(liste, b_size, int(b_start), orphan=1);"
-         tal:condition="liste">
+          <table cellpadding="10" border="0">
+              <thead>
+                <th>Id</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>Datum</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>Tid</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>Beskrivning</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>Belopp</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>&nbsp;&nbsp;</th>
+              </thead>
+              <tbody>
+              <tal:boucle tal:repeat="item batch">
+                  <tr cellpadding="10">
+                    <td tal:content="item/ID | nothing" />
+                    <td />
+                    <td tal:define="td item/TransactionDate; td python:here.toLocalizedTime(td)" tal:content="string:$td" />
+                    <td />
+                    <td tal:define="time item/Created; time python:time.strftime('%H:%M:%S')" tal:content="string:$time" />
+                    <td />
+                    <td tal:content="item/Description | nothing" />
+                    <td />
+                    <td style="text-align: right;" tal:content="item/Amount | nothing" />
+                    <td />
+                  </tr>
+              </tal:boucle>
+              </tbody>
+          </table>
 
-        <table cellpadding="10" border="0">
-            <thead>
-              <th>Id</th>
-              <th>&nbsp;&nbsp;</th>
-              <th>Datum</th>
-              <th>&nbsp;&nbsp;</th>
-              <th>Tid</th>
-              <th>&nbsp;&nbsp;</th>
-              <th>Beskrivning</th>
-              <th>&nbsp;&nbsp;</th>
-              <th>Belopp</th>
-              <th>&nbsp;&nbsp;</th>
-              <th>&nbsp;&nbsp;</th>
-            </thead>
-            <tbody>
-            <tal:boucle tal:repeat="item batch">
-                <tr cellpadding="10">
-                  <td tal:content="item/ID | nothing" />
-                  <td />
-                  <td tal:define="td item/TransactionDate; td python:here.toLocalizedTime(td)" tal:content="string:$td" />
-                  <td />
-                  <td tal:define="time item/Created; time python:time.strftime('%H:%M:%S')" tal:content="string:$time" />
-                  <td />
-                  <td tal:content="item/Description | nothing" />
-                  <td />
-                  <td style="text-align: right;" tal:content="item/Amount | nothing" />
-                  <td />
-                </tr>
-            </tal:boucle>
-            </tbody>
-        </table>
+          <div metal:use-macro="here/batch_macros/macros/navigation" />
 
-        <div metal:use-macro="here/batch_macros/macros/navigation" />
-
-    </div>
+      </div>
+    </tal:transactions>
+    <tal:transactions condition="not:view/hasTransactions">
+      <div>No transactions found</div>
+    </tal:transactions>    
     <div tal:replace="structure provider:plone.belowcontentbody" />
 
     </tal:main-macro>

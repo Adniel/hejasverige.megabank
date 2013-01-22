@@ -5,15 +5,15 @@ version = '1.0'
 
 setup(name='hejasverige.megabank',
       version=version,
-      description="HejaSverige Views for MegaBank",
+      description="Heja Sverige MegaBank integration",
       long_description=open("README.md").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
       # Get more strings from
       # http://pypi.python.org/pypi?:action=list_classifiers
       classifiers=[
-        "Framework :: Plone",
-        "Programming Language :: Python",
-        ],
+                   "Framework :: Plone",
+                   "Programming Language :: Python",
+                   ],
       keywords='',
       author='',
       author_email='daniel.grindelid@gmail.com',
@@ -26,11 +26,15 @@ setup(name='hejasverige.megabank',
       install_requires=[
           'setuptools',
           'Plone',
+          'requests',
+          'plone.app.registry',
+          'plone.app.z3cform',
+
           # -*- Extra requirements: -*-
       ],
       extras_require={
         'test': ['plone.app.testing',]
-      },          
+      },
       entry_points="""
       # -*- Entry points: -*-
 
