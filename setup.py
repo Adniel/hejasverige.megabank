@@ -27,6 +27,7 @@ setup(name='hejasverige.megabank',
           'setuptools',
           'Plone',
           'requests',
+          'hejasverige.content',
           'plone.app.registry',
           'plone.app.z3cform',
 
