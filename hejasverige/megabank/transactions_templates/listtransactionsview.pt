@@ -43,6 +43,10 @@
         <div metal:use-macro="here/batch_macros/macros/navigation" />
 
     </div-->
+<tal:if  condition="view/hasConnectionError">
+    <div>There was a connection error</div>
+</tal:if> 
+<tal:elseif condition="not: view/hasConnectionError">     
     <tal:transactions condition="view/hasTransactions">
       <div tal:define="liste view/transactions;
                    Batch python:modules['Products.CMFPlone'].Batch;
@@ -90,7 +94,9 @@
     </tal:transactions>
     <tal:transactions condition="not:view/hasTransactions">
       <div>No transactions found</div>
-    </tal:transactions>    
+    </tal:transactions>
+</tal:elseif>
+
     <div tal:replace="structure provider:plone.belowcontentbody" />
 
     </tal:main-macro>
