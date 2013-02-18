@@ -1,0 +1,5 @@
+TRANSACTIONS_URL = 'transactions'
+TRANSACTIONDETAILS_URL = 'transactions/details'
+ACCOUNTS_URL = 'accounts'
+CARDS_URL = 'cards'
+INVOICES_URL = 'invoices'

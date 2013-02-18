@@ -44,4 +44,11 @@
       permission="cmf.ManagePortal"
       />  
 
+  <browser:menuItem
+          for="Products.ATContentTypes.interface.IATFolder"
+          menu="plone_displayviews"
+          title="My Account"
+          action="@@list-transactions"
+          description="Show Megabank transactions as view for the folder"
+          />
 </configure>

@@ -1,0 +1,56 @@
+<div style="border:1px solid gold;">
+<tal:if  condition="viewlet/hasConnectionError">
+    <div>Det gick inte att kontakta banken. Kontohändelser kan inte visas.</div>
+</tal:if> 
+<tal:elseif condition="not: viewlet/hasConnectionError">     
+    <tal:transactions condition="viewlet/hasInvoices">
+      <div tal:define="list viewlet/invoices;
+                   Batch python:modules['Products.CMFPlone'].Batch;
+                   ib_size python:4;
+                   ib_start python:0;
+                   ib_start request/b_start | ib_start;
+                   batch python:Batch(list, ib_size, int(ib_start), orphan=1);"
+           tal:condition="list">
+
+          <table cellpadding="10" border="0">
+              <thead>
+                <th>Id</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>Datum</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>Tid</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>Beskrivning</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>Belopp</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>&nbsp;&nbsp;</th>
+              </thead>
+              <tbody>
+              <tal:boucle tal:repeat="item batch">
+                  <tr cellpadding="10">
+                    <td tal:content="item/ID | nothing" />
+                    <td />
+                    <td tal:define="td item/TransactionDate; td python:here.toLocalizedTime(td)" tal:content="string:$td" />
+                    <td />
+                    <td tal:define="time item/Created; time python:time.strftime('%H:%M:%S')" tal:content="string:$time" />
+                    <td />
+                    <td tal:content="item/Description | nothing" />
+                    <td />
+                    <td style="text-align: right;" tal:content="item/Amount | nothing" />
+                    <td />
+                  </tr>
+              </tal:boucle>
+              </tbody>
+          </table>
+
+          <div metal:use-macro="here/batch_macros/macros/navigation" />
+
+      </div>
+    </tal:transactions>
+    <tal:transactions condition="not:viewlet/hasInvoices">
+      <div>Det finns inga kontohändelser</div>
+    </tal:transactions>
+</tal:elseif>
+
+</div>

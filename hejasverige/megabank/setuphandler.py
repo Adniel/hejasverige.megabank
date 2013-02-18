@@ -107,16 +107,25 @@ def setupMyAccountFolder(portal, logger=None):
     folder_title = u'Mitt konto'
     object_type = 'Folder'
     view = '@@list-transactions'
+    
+    # Check if hejasverige.policy is applied. If not, place my-account in root folder, otherwise in my-pages
+    parent = 'my-pages'
+    mypages = portal.get(parent, None)
 
-    existing_objects = portal.objectIds()
+    if mypages:
+        rootfolder = mypages
+    else:
+        rootfolder = portal
+
+    existing_objects = rootfolder.objectIds()
 
     if folder_id in existing_objects:
         logger.info("Object exists in folder")
     else:
-        _createObjectByType(object_type, portal, id=folder_id,
+        _createObjectByType(object_type, rootfolder, id=folder_id,
                             title=_(folder_title))
 
-    obj = portal.get(folder_id, None)
+    obj = rootfolder.get(folder_id, None)
     if obj:
         if obj.Type() == object_type:
             try:

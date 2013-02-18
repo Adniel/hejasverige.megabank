@@ -1,0 +1,75 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="hejasverige.megabank">
+
+<body>
+
+<metal:main fill-slot="content-core">
+    <tal:main-macro metal:define-macro="content-core">
+
+    <!--div tal:replace="structure provider:plone.abovecontenttitle" /-->
+
+    <p class="documentDescription">Händelse <span tal:replace="view/transactionid"/></p>
+    <p class="documentDescription"></p>
+
+    <!--div tal:replace="structure provider:plone.abovecontentbody" /-->
+    <if tal:condition="view/hasTransaction">
+    <table class="listing nosort">
+      <thead>
+        <th colspan=2>Sidan hämtades <span tal:replace="view/now"/></th>
+      </thead>
+      <tbody>
+      <tr class="even">
+    	 <td><b>Köpbelopp:</b> </td>
+       <td><span tal:replace="view/transactiondetails/Details/Amount"/></td>
+      </tr>
+      <tr class="odd">
+    	 <td><b>Beskrivning:</b> </td>
+       <td><span tal:replace="view/transactiondetails/Details/Description"/></td>
+      </tr>
+      <tr class="even">
+    	 <td><b>Händelsedatum:</b> </td>
+       <td><span tal:replace="view/transactiondetails/Details/Created"/></td>
+      </tr>
+      <tr class="odd">
+    	 <td><b>Handlarens organisationsnummer:</b> </td>
+       <td><span tal:replace="view/transactiondetails/Details/CorporateID"/></td>
+      </tr>
+      <tr class="even">
+    	 <td><b>Externt Id:</b> </td>
+       <td><span tal:replace="view/transactiondetails/Details/ExternalID"/></td>
+      </tr>
+      <tr class="odd">
+       <td><b>Internt Id:</b> </td>
+       <td><span tal:replace="view/transactiondetails/ID"/></td>
+      </tr>
+      <tr class="even">
+       <td><b>Ursprung:</b></td>
+       <td><span tal:replace="view/transactiondetails/Details/TransactionType"/></td>
+      </tr>
+      <tr class="odd">
+       <td><b>Kort: </b></td>
+       <td><tal:kort tal:replace="view/transactiondetails/Details/MerchantTransaction/CardNumber|nothing"/></td>
+      </tr>
+      <tr class="even">
+        <td colspan=2><tal:pending tal:condition="view/transactiondetails/Pending"><b>Ej bekräftad av avsändare ännu.</b></tal:pending></td>
+      </tr>
+    </tbody>
+    </table>
+    </if>
+    <elseif tal:condition="not:view/hasTransaction">
+    	<p>Transaction with id <span tal:replace="view/transactionid" /> not found</p>
+    </elseif>
+
+    <a tal:attributes="href view/callback">Tillbaka</a>
+    <!--div tal:replace="structure provider:plone.belowcontentbody" /-->
+
+    </tal:main-macro>
+</metal:main>
+
+</body>
+</html>

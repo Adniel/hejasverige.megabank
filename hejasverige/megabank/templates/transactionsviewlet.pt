@@ -1,0 +1,79 @@
+<div>
+      <!--div tal:define="liste viewlet/namn;
+                   Batch python:modules['Products.CMFPlone'].Batch;
+                   b_size python:2;
+                   b_start python:0;
+                   b_start request/b_start | b_start;
+                   batch python:Batch(liste, b_size, int(b_start), orphan=1);"
+           tal:condition="liste">
+
+          <table cellpadding="10" border="0">
+              <thead>
+                <th>Namn</th>
+                <th>&nbsp;&nbsp;</th>
+                <th>Status</th>
+              </thead>
+              <tbody>
+              <tal:kuk tal:repeat="item batch">
+                  <tr cellpadding="10">
+                    <td tal:content="item/name | nothing" />
+                    <td/>
+                    <td tal:content="item/status | nothing" />
+                  </tr>
+              </tal:kuk>
+              </tbody>
+          </table>
+
+          <div metal:use-macro="here/batch_macros/macros/navigation" />
+
+      </div-->
+<tal:if  condition="viewlet/hasConnectionError">
+    <div>Det gick inte att kontakta banken. Kontohändelser kan inte visas.</div>
+</tal:if> 
+<tal:elseif condition="not: viewlet/hasConnectionError">     
+    <tal:transactions condition="viewlet/hasTransactions">
+      <div tal:define="list viewlet/transactions;
+                   Batch python:modules['Products.CMFPlone'].Batch;
+                   b_size python:10;
+                   b_start python:0;
+                   b_start request/b_start | b_start;
+                   batch python:Batch(list, b_size, int(b_start), orphan=1);"
+           tal:condition="list">
+
+          <table cellpadding="10" border="0" class="listing nosort messageListing">
+              <thead>
+                <th />
+                <th>Id</th>
+                <th>Datum</th>
+                <th>Tid</th>
+                <th>Beskrivning</th>
+                <th>Belopp</th>
+                <th>&nbsp;&nbsp;</th>
+              </thead>
+              <tbody>
+              <tal:boucle tal:repeat="item batch">
+                  <tr cellpadding="10" tal:define="oddrow repeat/item/odd" tal:attributes="class python:oddrow and 'even' or 'odd'">
+                    <td><tal:pending tal:condition="item/Pending">*&nbsp;</tal:pending></td>
+                    <td>
+                      
+                      <span tal:replace="item/ID | nothing" /></td>
+                    <td tal:define="td item/TransactionDate; td python:here.toLocalizedTime(td)" tal:content="string:$td" />
+                    <td tal:define="time item/Created; time python:time.strftime('%H:%M:%S')" tal:content="string:$time" />
+                    <td tal:content="item/Description | nothing" />
+                    <td style="text-align: right;" tal:content="item/Amount | nothing" />
+                    <td><a tal:attributes="href string:${context/absolute_url}/@@transactions-detail?id=${item/ID}&callback=${viewlet/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/info_icon.gif;alt string:Info about ${item/ID}"/></a>
+                  </tr>
+              </tal:boucle>
+              </tbody>
+          </table>
+
+          <div metal:use-macro="here/batch_macros/macros/navigation" />
+
+      </div>
+    </tal:transactions>
+    <tal:transactions condition="not:viewlet/hasTransactions">
+      <div>Det finns inga kontohändelser</div>
+    </tal:transactions>
+</tal:elseif>
+
+</div>

@@ -1,0 +1,11 @@
+<dl class="portlet portletCards"
+	i18:domain="hejasverige.megabank">
+	<dt class="portletHeader">
+		<span class="portletTopLeft"></span>
+		My Cards
+		<span class="portletTopRight"></span>
+	</dt>
+	<tal:items tal:repeat="card view/cards">
+		<dd class="portletItem"
+			tal:define="oddrow repeat/card/odd;"
+			tal:attributes="class python:oddrow and 'portletItem even' or 'portletItem odd'">

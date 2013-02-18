@@ -1,0 +1,137 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="hejasverige.megabank">
+
+<body>
+
+<metal:main fill-slot="content-core">
+    <tal:main-macro metal:define-macro="content-core">
+
+    <!--div tal:replace="structure provider:plone.abovecontenttitle" /-->
+
+    <!--h1 class="documentFirstHeading">Mitt konto</h1-->
+    <p class="documentDescription">Sidan hämtades <span tal:replace="view/now"/></p>
+
+    <!--div tal:replace="structure provider:plone.abovecontentbody" /-->
+    <h2>Konto</h2>
+    <tal:account condition="view/hasAccount">
+    <table class="listing nosort messageListing">
+      <!--thead>
+        <th></th>
+        <th/>
+      </thead-->
+      <tbody>
+        <tr class="odd">
+          <td><strong>Saldo:</strong></td>
+          <td><span tal:replace="view/Account/Balance"/></td>
+        </tr>
+        <tr class="even">
+         <td><strong>Kredit:</strong></td>
+         <td><span tal:replace="view/Account/Limit"/></td>
+        </tr>
+        <tr class="odd">
+         <td><strong>Disponibelt belopp:</strong></td>
+         <td><span tal:replace="view/Account/AmountAvailable"/></td>
+        </tr>
+        <tr class="even">
+         <td><strong>Väntande belopp:</strong></td>
+         <td><span tal:replace="view/Account/AmountPending"/></td>
+        </tr>
+      </tbody>
+    </table>
+    </tal:account>
+    <tal:notaccount condition="not:view/hasAccount">
+      Det gick inte att kontakta banken. Ditt konto kan inte visas.
+    </tal:notaccount>
+
+    <!--div tal:replace="structure provider:plone.belowcontenttitle" /-->
+
+    <!--div id="transactions-placefolder"-->
+     <!-- Hidden link to a view URL which will render the view containing the snippet for comments -->
+      <!--p class="loading-indicator">
+        <img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/spinner.gif" /> Loading loading...
+      </p>
+
+     <a rel="nofollow" style="display:none" tal:attributes="href string:${context/absolute_url}/@@transactions" />
+
+     <script>
+             jQuery(function($) {
+                     var transactionsURL = $("#transactions-placefolder a").attr("href");
+                     if (transactionsURL) {
+                             $("#transactions-placefolder").load(transactionsURL);
+                     }
+             });
+     </script>
+    </div-->
+    <h2>Kontohändelser</h2>
+    <div tal:replace="structure provider:hejasverige.megabank.viewletmanager" />
+
+    <!-- - INVOICES - -->
+    <h2>Fakturor</h2>
+  <div>
+  <tal:if  condition="view/hasConnectionError">
+      <div>Det gick inte att kontakta banken. Fakturor kan inte visas.</div>
+  </tal:if> 
+  <tal:elseif condition="not: view/hasConnectionError">     
+      <tal:transactions condition="view/hasInvoices">
+        <div tal:define="list view/Invoices;
+                     Batch python:modules['Products.CMFPlone'].Batch;
+                     ib_size python:4;
+                     ib_start python:0;
+                     ib_start request/ib_start | ib_start;
+                     batch python:Batch(list, ib_size, int(ib_start), b_start_str='ib_start', orphan=1);"
+             tal:condition="list">
+
+            <table cellpadding="0" border="0" class="listing nosort messageListing">
+                <thead>
+                  <th>Id</th>
+                  <th>Avsändare</th>
+                  <th>Belopp</th>
+                  <th>Inkommen</th>
+                  <th>Sista betalningsdag</th>
+                  <th>&nbsp;&nbsp;</th>
+                </thead>
+                <tbody>
+                <tal:invoices tal:repeat="item batch">
+                    <tr cellpadding="10" class="odd" tal:define="oddrow repeat/item/odd" tal:attributes="class python:oddrow and 'even' or 'odd'" >
+                      <td tal:content="item/ID | nothing" />
+                      <td tal:content="item/PersonalID | nothing" />
+                      <td style="text-align: right;" tal:content="item/Amount | nothing" />
+                      <td tal:define="time item/Created; time python:time.strftime('%H:%M:%S')" tal:content="string:$time" />
+                      <td tal:define="td item/TransactionDate; td python:here.toLocalizedTime(td)" tal:content="string:$td" />
+                      <!--td tal:content="item/Description | nothing" /-->
+                      <td>
+                        <a tal:attributes="href string:${context/absolute_url}/@@update-invoice?id=${item/ID}&status=1&callback=${view/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/approve_icon.png;alt string:Godkänn ${item/ID}"/></a>              
+
+                        <a tal:attributes="href string:${context/absolute_url}/@@update-invoice?id=${item/ID}&status=2&callback=${view/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/reject_icon.png;alt string:Avböj ${item/ID}"/></a>                        
+                        <a tal:attributes="href string:${context/absolute_url}/@@invoice-detail?id=${item/ID}&callback=${view/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/info_icon.gif;alt string:Info about ${item/ID}"/></a></td>
+                    </tr>
+                </tal:invoices>
+                </tbody>
+            </table>
+
+            <div metal:use-macro="here/batch_macros/macros/navigation" />
+
+        </div>
+      </tal:transactions>
+      <tal:transactions condition="not:view/hasInvoices">
+        <div>Det finns inga kontohändelser</div>
+      </tal:transactions>
+  </tal:elseif>
+
+  </div>
+
+
+    <!--div tal:replace="structure context/@@viewlets/transactionsviewlet" /-->
+
+    <!--div tal:replace="structure provider:plone.belowcontentbody" /-->
+
+    </tal:main-macro>
+</metal:main>
+
+</body>
+</html>
