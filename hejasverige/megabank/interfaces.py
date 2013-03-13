@@ -21,9 +21,14 @@ class IMegabankSettings(Interface):
     configuration registry and obtainable via plone.registry.
     """
 
-    megabank_url = schema.TextLine(title=_(u'Url'),
+    megabank_url = schema.TextLine(title=_(u'API Url'),
                                    description=_(u'help_megabank_url',
                                    default=u'Your Megabank url for reading Megabank API.'
+                                   ), required=False, default=u'')
+
+    megabank_onlinepayment_url = schema.TextLine(title=_(u'Online Payment Url'),
+                                   description=_(u'help_megabank_onlinepayment_url',
+                                   default=u'Your Megabank url for getting the online payment form.'
                                    ), required=False, default=u'')
 
     megabank_user = schema.TextLine(title=_(u'User name'),

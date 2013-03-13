@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from five import grok
 from plone import api
 from DateTime import DateTime
@@ -8,12 +10,27 @@ from hejasverige.megabank.bank import Bank
 from hejasverige.megabank.settings import Settings
 from hejasverige.megabank.interfaces import IMyAccountFolder
 import urllib
+from plone.memoize.instance import memoize
+
 # Add interface hejasverige.megabank.interfaces.IMyAccountFolder to folder
 # http://belomor.zapto.org:9091/Plone/mitt-konto/manage_interfaces
 # Add "layout" as string with value @@list-transactions
 # http://belomor.zapto.org:9091/Plone/mitt-konto/manage_propertiesForm
 
 grok.templatedir("templates")
+
+
+from zope import interface, schema
+class INote(interface.Interface):
+    text = schema.TextLine(title=u"Text",
+                           required=False)
+
+
+from z3c.form import form, field
+class CommentForm(form.Form):
+    fields = field.Fields(INote)
+    ignoreContext = True # don't use context to get widget data
+    label = "Add a note"
 
 
 def get_pid():
@@ -59,7 +76,34 @@ class MyAccountView(grok.View):
     def get_url(self):
         context = self.context.aq_inner
         #import pdb ; pdb.set_trace()
-        return self.prepareUrl(context.absolute_url())    
+        return self.prepareUrl(context.absolute_url()) 
+
+
+    @memoize
+    def getAccountHolderName(self, personalid):
+        from Products.CMFCore.utils import getToolByName
+
+        membership_tool = getToolByName(self, 'portal_membership')
+        matching_members = [member for member in membership_tool.listMembers()
+            if member.getProperty('personal_id')==personalid]
+        print matching_members
+        if matching_members:
+            return matching_members[0].getProperty('fullname')
+        else:
+            return 'Unknown'
+
+
+    def addAccountHolderNames(self, jsondictionary):
+        #import pdp; pdb.trace()
+        items = []
+        try:
+            for item in jsondictionary:
+                item['Name'] = self.getAccountHolderName(item['OffsetPersonalID'])
+                items.append(item)
+        except Exception, e:
+            self.logger.exception('Exception occured: %s' % str(e))
+        return items
+
 
     def update(self):
         logger = logging.getLogger("@@my-account")
@@ -128,6 +172,7 @@ class MyAccountView(grok.View):
                 try:
                     self.Invoices = bank.getInvoices(personalid=pid, status=0)
                     if self.Invoices:
+                        self.Invoices = self.addAccountHolderNames(self.Invoices)
                         self.hasInvoices = True
                 except ConnectionError:
                     self.hasConnectionError = True
@@ -178,6 +223,19 @@ class TransactionDetailView(grok.View):
                 except:
                     logger.exception('Unable to get transactiondetails for transaction %s' % (self.transactionid))
 
+class RejectInvoiceForm(grok.View):
+    grok.context(IMyAccountFolder)
+    grok.name('reject-invoice')
+    grok.require('zope2.View')
+    grok.template('rejectinvoice')
+
+    def update(self):
+        ''' Nothing
+        '''
+        self.invoiceid = self.request.get('id', None)
+        self.status = self.request.get('status', None)
+
+
 
 class UpdateInvoiceView(grok.View):
     grok.context(IMyAccountFolder)
@@ -194,20 +252,33 @@ class UpdateInvoiceView(grok.View):
         self.invoiceid = self.request.get('id', None)
         self.status = self.request.get('status', None)
         self.callback = self.request.get('callback', u'http%3A//localhost%3A8080/plon/my-pages/my-account')
+        self.reason = self.request.get('reason', None)
+        print self.reason
 
         pid = get_pid()
+        result = "Inget personnummer tillgängligt för avsändare"
         if pid and self.invoiceid and self.status:
             s = Settings()
             settings = s.getSettings()            
             bank = get_bank(settings, logger)
+            result = "Problem när inställningarna för banken skulle skapas"
             if bank:
                 try:
-                    updated_invoice = bank.updateInvoice(personalid=pid, status=self.status, invoiceid=self.invoiceid)
+                    updated_invoice = bank.updateInvoice(personalid=pid, status=self.status, invoiceid=self.invoiceid, notes=self.reason)
                     logger.info(updated_invoice)
-                    return updated_invoice
+                    result = "Fakturan uppdaterad"
                 except Timeout:
+                    result = "Kunde inte uppdatera fakturan. Banken svarar inte."
                     logger.exception('Timout! Unable to update invoice with id %s' % (self.invoiceid))
+                    return result
                 except ConnectionError:
+                    result = "Kunde inte uppdatera fakturan. Banken svarar inte."
                     logger.exception('ConnectionError! Unable to update invoice with id %s' % (self.invoiceid))
+                    return result
                 except:
+                    result = "Kunde inte uppdatera fakturan. Obegripligt fel."
                     logger.exception('Unable to update invoice with id %s' % (self.invoiceid))
+                    return result
+        return result
+
+

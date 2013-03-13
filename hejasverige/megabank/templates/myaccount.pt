@@ -17,7 +17,7 @@
     <p class="documentDescription">Sidan hämtades <span tal:replace="view/now"/></p>
 
     <!--div tal:replace="structure provider:plone.abovecontentbody" /-->
-    <h2>Konto</h2>
+    <h2>Kontoöversikt</h2>
     <tal:account condition="view/hasAccount">
     <table class="listing nosort messageListing">
       <!--thead>
@@ -67,11 +67,76 @@
              });
      </script>
     </div-->
+    <!-- TRANSACTIONS -->
     <h2>Kontohändelser</h2>
-    <div tal:replace="structure provider:hejasverige.megabank.viewletmanager" />
+    <!--div tal:replace="structure provider:hejasverige.megabank.viewletmanager" /-->
+<tal:if  condition="view/hasConnectionError">
+    <div>Det gick inte att kontakta banken. Kontohändelser kan inte visas.</div>
+</tal:if> 
+<tal:elseif condition="not: view/hasConnectionError">     
+    <tal:transactions condition="view/hasTransactions">
+      <div tal:define="list view/transactions;
+                   Batch python:modules['Products.CMFPlone'].Batch;
+                   tb_size python:10;
+                   tb_start python:0;
+                   tb_start request/tb_start | tb_start;
+                   batch python:Batch(list, tb_size, int(tb_start), b_start_str='tb_start', orphan=1);"
+           tal:condition="list">
+
+          <table cellpadding="10" border="0" class="listing nosort messageListing">
+              <thead>
+                <th />
+                <th>Id</th>
+                <th>Datum</th>
+                <th>Tid</th>
+                <th>Beskrivning</th>
+                <th>Belopp</th>
+                <th>&nbsp;&nbsp;</th>
+              </thead>
+              <tbody>
+              <tal:boucle tal:repeat="item batch">
+                  <tr cellpadding="10" tal:define="oddrow repeat/item/odd" tal:attributes="class python:oddrow and 'even' or 'odd'">
+                    <td><tal:pending tal:condition="item/Pending">*&nbsp;</tal:pending></td>
+                    <td>
+                      
+                      <span tal:replace="item/ID | nothing" /></td>
+                    <td tal:define="td item/TransactionDate; td python:here.toLocalizedTime(td)" tal:content="string:$td" />
+                    <td tal:define="time item/Created; time python:time.strftime('%H:%M:%S')" tal:content="string:$time" />
+                    <td tal:content="item/Description | nothing" />
+                    <td style="text-align: right;" tal:content="item/Amount | nothing" />
+                    <td><a tal:attributes="href string:${context/absolute_url}/@@transactions-detail?id=${item/ID}&callback=${view/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/info_icon.gif;alt string:Info about ${item/ID}"/></a>
+                  </tr>
+              </tal:boucle>
+              </tbody>
+          </table>
+
+          <div metal:use-macro="here/batch_macros/macros/navigation" />
+
+      </div>
+    </tal:transactions>
+    <tal:transactions condition="not:view/hasTransactions">
+      <div>Det finns inga kontohändelser</div>
+    </tal:transactions>
+</tal:elseif>
+
 
     <!-- - INVOICES - -->
-    <h2>Fakturor</h2>
+    <script type="text/javascript">
+    $(function(){
+      $('a#reject').prepOverlay({
+        subtype: 'ajax',
+        formselector: 'form',
+        closeselector: '[name="form.button.Cancel"]',
+        noform: function(el) {return $.plonepopups.noformerrorshow(el, 'redirect');},
+        redirect: function () {return location.href;},    
+        width:'30%'
+
+      });
+    });
+    </script>
+   
+    <a id="betala" href="http://www.nets.se">Betala</a>
+    <h2 id="fakturor">Fakturor</h2>
   <div>
   <tal:if  condition="view/hasConnectionError">
       <div>Det gick inte att kontakta banken. Fakturor kan inte visas.</div>
@@ -85,11 +150,13 @@
                      ib_start request/ib_start | ib_start;
                      batch python:Batch(list, ib_size, int(ib_start), b_start_str='ib_start', orphan=1);"
              tal:condition="list">
-
+            <form name="" action="#" method="post" tal:attributes="action string:${context/absolute_url}/@@prepare-invoices">
             <table cellpadding="0" border="0" class="listing nosort messageListing">
                 <thead>
-                  <th>Id</th>
+                  <th></th>
+                  <th>Fakturanummer</th>
                   <th>Avsändare</th>
+                  <th>Id</th>
                   <th>Belopp</th>
                   <th>Inkommen</th>
                   <th>Sista betalningsdag</th>
@@ -98,8 +165,10 @@
                 <tbody>
                 <tal:invoices tal:repeat="item batch">
                     <tr cellpadding="10" class="odd" tal:define="oddrow repeat/item/odd" tal:attributes="class python:oddrow and 'even' or 'odd'" >
+                      <td><input type="checkbox" id="#" tal:attributes="id string:${item/ID}" /></td>
                       <td tal:content="item/ID | nothing" />
-                      <td tal:content="item/PersonalID | nothing" />
+                      <td tal:content="item/Name | nothing" />
+                      <td tal:content="item/OffsetPersonalID | nothing" />
                       <td style="text-align: right;" tal:content="item/Amount | nothing" />
                       <td tal:define="time item/Created; time python:time.strftime('%H:%M:%S')" tal:content="string:$time" />
                       <td tal:define="td item/TransactionDate; td python:here.toLocalizedTime(td)" tal:content="string:$td" />
@@ -107,19 +176,20 @@
                       <td>
                         <a tal:attributes="href string:${context/absolute_url}/@@update-invoice?id=${item/ID}&status=1&callback=${view/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/approve_icon.png;alt string:Godkänn ${item/ID}"/></a>              
 
-                        <a tal:attributes="href string:${context/absolute_url}/@@update-invoice?id=${item/ID}&status=2&callback=${view/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/reject_icon.png;alt string:Avböj ${item/ID}"/></a>                        
+                        <a id="reject" tal:attributes="href string:${context/absolute_url}/@@reject-invoice?id=${item/ID}&status=2"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/reject_icon.png;alt string:Avböj ${item/ID}"/></a>                        
                         <a tal:attributes="href string:${context/absolute_url}/@@invoice-detail?id=${item/ID}&callback=${view/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/info_icon.gif;alt string:Info about ${item/ID}"/></a></td>
                     </tr>
                 </tal:invoices>
                 </tbody>
             </table>
-
+            <input type="button" class="button" id="addinvoices" value="Lägg till"/>
+            </form>
             <div metal:use-macro="here/batch_macros/macros/navigation" />
 
         </div>
       </tal:transactions>
       <tal:transactions condition="not:view/hasInvoices">
-        <div>Det finns inga kontohändelser</div>
+        <div>Det finns inga fakturor</div>
       </tal:transactions>
   </tal:elseif>
 

@@ -49,6 +49,8 @@ class Bank():
                     if isinstance(item[k], dict):
                         item[k] = self.convertJsonDictionaryDates(jsondictionary=[item[k]])[0]
                     else:
+                        #\\/Date\((-?\d+)\)\\/
+
                         p = re.compile('/Date\(')
                         m = p.match(str(item[k]))
                         if m:
@@ -115,9 +117,9 @@ class Bank():
                 payload = json.loads(r.text)
 
                 items = []
+                p = re.compile('/Date\(')
                 for item in payload:
                     for k in item.keys():
-                        p = re.compile('/Date\(')
                         m = p.match(str(item[k]))
                         if m:
                             item[k] = datetime.datetime(1970, 1, 1) \
@@ -176,23 +178,26 @@ class Bank():
                          timeout=self.timeout)
 
         if r.text:
-            payload = json.loads(r.text)
-            items = []
-            for item in payload:
-                for k in item.keys():
-                    p = re.compile('/Date\(')
-                    m = p.match(str(item[k]))
-                    if m:
-                        item[k] = datetime.datetime(1970, 1, 1) \
-                            + datetime.timedelta(milliseconds=int(re.findall(r'\d+'
-                                , item[k])[0])) \
-                            + datetime.timedelta(hours=int((re.findall(r'\d+'
-                                , item[k])[1])[:2]))
+            try:
+                payload = json.loads(r.text)
+                items = []
+                p = re.compile('/Date\(')
+                for item in payload:
+                    for k in item.keys():
+                        m = p.match(str(item[k]))
+                        if m:
+                            item[k] = datetime.datetime(1970, 1, 1) \
+                                + datetime.timedelta(milliseconds=int(re.findall(r'\d+'
+                                    , item[k])[0])) \
+                                + datetime.timedelta(hours=int((re.findall(r'\d+'
+                                    , item[k])[1])[:2]))
 
-                items.append(item)
+                    items.append(item)
 
-            return items
-
+                return items
+            except Exception, e:
+                self.logger.warning('Returned data is not JSON: %s' % str(e))
+                return []
         else:
             self.logger.info('No invoces in payload')
             return []
@@ -206,7 +211,7 @@ class Bank():
         self.logger.debug('No personal_id was provided to getCards')
         return []
 
-    def updateInvoice(self, personalid, invoiceid, status):
+    def updateInvoice(self, personalid, invoiceid, status, notes=None):
         '''
             Updates an invoice 
         '''
@@ -215,16 +220,20 @@ class Bank():
         # {
         #   'ID': invoiceid
         #   'Status': status
+        #   'Notes': notes
         # }
 
         url = self.url + '/' + INVOICES_URL + '/' + personalid + '/'
         print url
         headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
-        payload = json.dumps({'ID': int(invoiceid), 'Status': int(status)})
+        if not notes:
+            payload = json.dumps({'ID': int(invoiceid), 'Status': int(status),})
+        else:
+            payload = json.dumps({'ID': int(invoiceid), 'Status': int(status), 'Notes': notes,})
         self.logger.info('Headers: ' + str(json.dumps(headers)))
         self.logger.info('Posting: ' + str(payload))
         result = requests.put(url, data=payload, headers=headers, auth=self.auth,
-                            timeout=40)
+                            timeout=self.timeout)
         self.logger.info(result.text)
         return result
 

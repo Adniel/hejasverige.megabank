@@ -91,55 +91,6 @@ class TransactionsViewlet(grok.Viewlet):
             self.hasTransactions = False
             logger.info("User %s has no personal_id", str(user))
 
-class InvoicesViewlet(grok.Viewlet):
-    """ Create a viewlet for invoices
-
-    """
-    grok.name('invoicesviewlet')
-    grok.template('invoicesviewlet')
-    grok.viewletmanager(ExtraViewletManager)
-
-    def update(self):
-        logger = logging.getLogger("invoicesviewlet")
-
-        logger.debug("Running update for invoices viewlet")
-        s = Settings()
-        settings = s.getSettings()
-
-        user = api.user.get_current()
-        pid = user.getProperty('personal_id')
-
-        self.hasInvoices = False
-        self.hasAccount = False
-        self.hasConnectionError = False
-
-
-        if pid:
-            logger.info('List invoices for ' + str(user))
-
-            # verify that the megabank settings are made before requesting...
-            # Create new bank
-            try:
-                logger.info('Creating Bank')
-                bank = Bank(settings=settings)
-            except:
-                logger.exception('Unable to create the Bank...')
-
-            if bank:
-                try:
-                    self.invoices = bank.getInvoices(personalid=pid)
-                    if self.invoices:
-                        self.hasInvoices = True
-                except ConnectionError:
-                    self.hasConnectionError = True
-                    logger.info("Connection Error")
-                except Timeout:
-                    self.hasConnectionError = True
-                    logger.info("Timeout")
-
-        else:
-            self.hasInvoices = False
-            logger.info("User %s has no personal_id", str(user))
 
 
 

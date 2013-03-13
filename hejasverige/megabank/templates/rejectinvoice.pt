@@ -1,0 +1,15 @@
+<h1 class="documentFirstHeading">Avvisa faktura <span tal:replace="view/invoiceid" /></h1>
+<div class="documentDescription">Vill du avvisa faktura <span tal:replace="view/invoiceid" />?</div>
+<form action="#" method="post" name="form" tal:attributes="action string:${context/absolute_url}/@@update-invoice?id=${view/invoiceid}&status=${view/status}">
+	<dl>
+		<dt>
+			<label for="reason">Ev. anledning:</label>
+			<input type="text" name="reason" />
+		</dt>
+	</dl>
+	<div class="formControls">
+		<input class="context" type="submit" name="form.button.Cancel" value="Ångra" />
+		<input class="context" type="submit" name="form.button.Reject" value="Avvisa" />
+	</div>
+</form>
+

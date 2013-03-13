@@ -56,7 +56,7 @@
        <td><tal:kort tal:replace="view/transactiondetails/Details/MerchantTransaction/CardNumber|nothing"/></td>
       </tr>
       <tr class="even">
-        <td colspan=2><tal:pending tal:condition="view/transactiondetails/Pending"><b>Ej bekräftad av avsändare ännu.</b></tal:pending></td>
+        <td colspan=2><tal:pending tal:condition="view/transactiondetails/Pending"><b>Ej ännu bekräftad av avsändare.</b></tal:pending></td>
       </tr>
     </tbody>
     </table>
