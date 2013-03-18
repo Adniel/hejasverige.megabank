@@ -7,6 +7,7 @@ from hejasverige.megabank.config import TRANSACTIONS_URL
 from hejasverige.megabank.config import ACCOUNTS_URL
 from hejasverige.megabank.config import CARDS_URL
 from hejasverige.megabank.config import INVOICES_URL
+from hejasverige.megabank.interfaces import IMegabankSettings
 
 import json
 import requests
@@ -14,19 +15,28 @@ from requests.exceptions import ConnectionError
 from requests.exceptions import Timeout
 
 import datetime
+import time
 import logging
 import re
+import sys
 
-import hejasverige.megabank.bank
+from plone.registry.interfaces import IRegistry
+from zope.component import getUtility
+
 
 class Bank():
 
-    def __init__(self, settings):
+    def __init__(self):
         ''' settings is a RecordsProxy object retreived from megabank registry settings
         '''
+
+        # read the settings for the connection to the bank
+        settings = self.getSettings()
+
         self.logger = logging.getLogger("bank.class")
         self.auth = HTTPBasicAuth(settings.megabank_user, settings.megabank_password)
         self.url = settings.megabank_url
+
         try:
             self.timeout = float(settings.megabank_timeout)
         except:
@@ -36,8 +46,22 @@ class Bank():
 
         self.logger.info('User: ' + settings.megabank_user)
         self.logger.info('Password: ' + settings.megabank_password)
-        self.logger.info('Url: ' + self.url)               
+        self.logger.info('Url: ' + self.url)
         self.logger.info('Timeout: ' + str(self.timeout))
+
+    def getSettings(self):
+        ''' Helper function to get the settings provided by megabank registry
+
+        '''
+        try:
+            registry = getUtility(IRegistry)
+        except:
+            print 'Failed to get utility IRegistry'
+            return
+
+        settings = registry.forInterface(IMegabankSettings)
+
+        return settings
 
     def convertJsonDictionaryDates(self, jsondictionary):
         #import pdp; pdb.trace()
@@ -63,6 +87,23 @@ class Bank():
         except Exception, e:
             self.logger.exception('Exception occured: %s' % str(e))
         return items
+
+    def getJsonDate(self, date):
+        init_date = datetime.datetime(1970, 1, 1)
+
+        if type(date) is not datetime.datetime:
+            print('Invalid date!')
+            return None
+        else:
+            delta = date - init_date
+            day_part = delta.days * 86400 * 1000
+            second_part = delta.seconds * 1000
+            microsecond_part = delta.microseconds / 1000
+
+            total = day_part + second_part + microsecond_part
+            jsondate = '/Date(' + str(total) + '+0200)/'
+
+        return jsondate
 
     def getAccount(self, personalid):
 
@@ -114,7 +155,7 @@ class Bank():
 
         if r.text:
             try:
-                payload = json.loads(r.text)
+                payload = json.loads(r.text.encode('ascii', 'ignore'))
 
                 items = []
                 p = re.compile('/Date\(')
@@ -143,10 +184,9 @@ class Bank():
         url = self.url + '/' + TRANSACTIONDETAILS_URL + '/' + personalid + '/' + transactionid
         print url
         r = requests.get(url, auth=self.auth, timeout=self.timeout)
-
         if r.text:
             try:
-                payload = json.loads(r.text)
+                payload = json.loads(r.text.encode('ascii', 'ignore'))
                 return self.convertJsonDictionaryDates(jsondictionary=[payload])
             except Exception, e:
                 self.logger.exception("Exception occured: %s" % str(e))
@@ -177,9 +217,11 @@ class Bank():
         r = requests.get(url, auth=self.auth,
                          timeout=self.timeout)
 
+
         if r.text:
             try:
-                payload = json.loads(r.text)
+                payload = json.loads(r.text.encode('ascii', 'ignore'))
+                #    import pdb; pdb.set_trace()
                 items = []
                 p = re.compile('/Date\(')
                 for item in payload:
@@ -237,10 +279,11 @@ class Bank():
         self.logger.info(result.text)
         return result
 
-    def createInvoice(self, invoice):
+    def createInvoice(self, obj):
         '''
             Creates an invoice 
         '''
+        print "Now, send invoice", obj.id, "to the bank"
 
         # POST
         #{
@@ -256,5 +299,57 @@ class Bank():
         #    "Subject":"String content",
         #    "TransactionDate":"\/Date(928142400000+0200)\/"
         # }
-        return 'Not implemented'
+        #{ 
+        # "Amount":10000, 
+        # "Description":"desco", 
+        # "ExternalID":"extisdag",                  
+        # "PersonalID":"7804246697", 
+        # "Reference":"ref", 
+        # "Subject":"subj", 
+        #  "TransactionDate":"\/Date(928142400000+0200)\/" 
+        #}
+        
+        #invoice_url = obj.absolute_url()
+        invoice = {"Amount": obj.invoiceTotalAmount,
+                   "ExternalID": obj.invoiceNo,
+                   "PersonalID": obj.invoiceRecipient,
+                   "Reference": obj.invoiceRecipientName,
+                   "Subject": obj.description,
+                   "TransactionDate": self.getJsonDate(obj.invoiceExpireDate)
+                   }
+        
+        #import pdb; pdb.set_trace()
+
+        url = self.url + '/' + INVOICES_URL + '/' + obj.invoiceSender + '/'
+        print url
+        headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
+
+        payload = json.dumps(invoice)
+
+        self.logger.info('Headers: ' + str(json.dumps(headers)))
+        self.logger.info('Posting: ' + str(payload))
+
+        try:
+            result = requests.post(url,
+                                   data=payload,
+                                   headers=headers,
+                                   auth=self.auth,
+                                   timeout=self.timeout
+                                   )
+        except:
+            raise
+        #except Timeout, ex:
+        #    stacktrace = sys.exc_info()[2]
+        #    raise ValidationError(err.message), None, stacktrace
+        #except ConnectionError, ex:
+        #    stacktrace = sys.exc_info()[2]
+        #    raise ValidationError(err.message), None, stacktrace
+
+
+        self.logger.info(result)
+        #self.logger.info(result.text)
+        self.logger.info(result.status_code)
+        #import pdb; pdb.set_trace()
+        return result
+
 

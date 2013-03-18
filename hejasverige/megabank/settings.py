@@ -18,10 +18,4 @@ class Settings:
 
         settings = registry.forInterface(IMegabankSettings)
 
-        # if timeout is missing, set a default timeout
-        #try:
-        #    settings.megabank_timeout = float(settings.megabank_timeout)
-        #except:
-        #    settings.megabank_timeout = "5.000"
-
         return settings

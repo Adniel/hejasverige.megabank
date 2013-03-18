@@ -11,6 +11,8 @@ from hejasverige.megabank.settings import Settings
 from hejasverige.megabank.interfaces import IMyAccountFolder
 import urllib
 from plone.memoize.instance import memoize
+from z3c.form import form, field
+from zope import interface, schema
 
 # Add interface hejasverige.megabank.interfaces.IMyAccountFolder to folder
 # http://belomor.zapto.org:9091/Plone/mitt-konto/manage_interfaces
@@ -20,16 +22,14 @@ from plone.memoize.instance import memoize
 grok.templatedir("templates")
 
 
-from zope import interface, schema
 class INote(interface.Interface):
     text = schema.TextLine(title=u"Text",
                            required=False)
 
 
-from z3c.form import form, field
 class CommentForm(form.Form):
     fields = field.Fields(INote)
-    ignoreContext = True # don't use context to get widget data
+    ignoreContext = True  # don't use context to get widget data
     label = "Add a note"
 
 
@@ -38,7 +38,7 @@ def get_pid():
     pid = user.getProperty('personal_id')
 
     # if field is not defined as a personal property it becomes an object and the bank fails to load
-    if type(pid).__name__=='object':
+    if type(pid).__name__ == 'object':
         pid = None
     return pid
 
@@ -47,16 +47,16 @@ def get_now():
     return DateTime().strftime('%Y-%m-%d %H:%M:%S')
 
 
-def get_bank(settings, logger=None):
+def get_bank(logger=None):
 
     try:
         if logger:
             logger.info('Creating Bank')
-        bank = Bank(settings=settings)
+        bank = Bank()
     except:
-        bank =None
+        bank = None
         if logger:
-            logger.exception('Unable to create the Bank...')    
+            logger.exception('Unable to create the Bank...')
     return bank
 
 
@@ -72,12 +72,10 @@ class MyAccountView(grok.View):
     def prepareUrl(self, url):
         return urllib.quote(url)
 
-
     def get_url(self):
         context = self.context.aq_inner
         #import pdb ; pdb.set_trace()
-        return self.prepareUrl(context.absolute_url()) 
-
+        return self.prepareUrl(context.absolute_url())
 
     @memoize
     def getAccountHolderName(self, personalid):
@@ -92,7 +90,6 @@ class MyAccountView(grok.View):
         else:
             return 'Unknown'
 
-
     def addAccountHolderNames(self, jsondictionary):
         #import pdp; pdb.trace()
         items = []
@@ -104,14 +101,13 @@ class MyAccountView(grok.View):
             self.logger.exception('Exception occured: %s' % str(e))
         return items
 
-
     def update(self):
         logger = logging.getLogger("@@my-account")
 
-        s = Settings()
-        settings = s.getSettings()
+        #s = Settings()
+        #settings = s.getSettings()
 
-        logger.debug("Settings: " + str(settings))
+        #logger.debug("Settings: " + str(settings))
 
         #user = api.user.get_current()
         #pid = user.getProperty('personal_id')
@@ -134,13 +130,7 @@ class MyAccountView(grok.View):
             logger.info('Check user account (' + str(user)+ ')')        
 
             # Create new bank
-            try:
-                logger.info('Creating Bank')
-                #bank = Bank(mbuser=mbuser, mbpassword=mbpassword, mburl=mburl, timeout=mbtimeout)
-                bank = Bank(settings=settings)
-            except:
-                logger.exception('Unable to create the Bank...')
-
+            bank = get_bank(logger)
 
             if bank:
                 # Get Account
@@ -167,7 +157,6 @@ class MyAccountView(grok.View):
                     self.hasConnectionError = True
                     logger.info("Timeout")
 
-
                 # Get Invoices
                 try:
                     self.Invoices = bank.getInvoices(personalid=pid, status=0)
@@ -185,8 +174,8 @@ class MyAccountView(grok.View):
             self.hasTransactions = False
             logger.info("User %s has no personal_id", str(user))
 
-
         #import pdb ; pdb.set_trace()
+
 
 class TransactionDetailView(grok.View):
     grok.context(IMyAccountFolder)
@@ -207,13 +196,11 @@ class TransactionDetailView(grok.View):
         pid = get_pid()
         logger.info('No pid')
         if pid and self.transactionid:
-            s = Settings()
-            settings = s.getSettings()            
-            bank = get_bank(settings, logger)
+            bank = get_bank(logger)
             if bank:
                 try:
                     self.transactiondetails = bank.getTransactionDetails(personalid=pid, transactionid=self.transactionid)
-                    if len(self.transactiondetails)>0:
+                    if len(self.transactiondetails) > 0:
                         self.transactiondetails = self.transactiondetails[0]
                     self.hasTransaction = True
                 except Timeout:
@@ -258,10 +245,8 @@ class UpdateInvoiceView(grok.View):
         pid = get_pid()
         result = "Inget personnummer tillgängligt för avsändare"
         if pid and self.invoiceid and self.status:
-            s = Settings()
-            settings = s.getSettings()            
-            bank = get_bank(settings, logger)
-            result = "Problem när inställningarna för banken skulle skapas"
+            bank = get_bank(logger)
+            result = "Problem när anslutningen till banken skulle upprättas"
             if bank:
                 try:
                     updated_invoice = bank.updateInvoice(personalid=pid, status=self.status, invoiceid=self.invoiceid, notes=self.reason)
