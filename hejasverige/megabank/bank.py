@@ -346,10 +346,13 @@ class Bank():
         #    raise ValidationError(err.message), None, stacktrace
 
 
-        self.logger.info(result)
+        #self.logger.info(result.text)
         #self.logger.info(result.text)
         self.logger.info(result.status_code)
         #import pdb; pdb.set_trace()
-        return result
+        try:
+            returned_data = json.loads(result.text)
+        except:
+            returned_data = None
 
-
+        return returned_data

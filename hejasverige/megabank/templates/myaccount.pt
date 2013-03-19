@@ -160,6 +160,7 @@
                   <th>Belopp</th>
                   <th>Inkommen</th>
                   <th>Sista betalningsdag</th>
+                  <th></th>
                   <th>&nbsp;&nbsp;</th>
                 </thead>
                 <tbody>
@@ -173,6 +174,11 @@
                       <td tal:define="time item/Created; time python:time.strftime('%H:%M:%S')" tal:content="string:$time" />
                       <td tal:define="td item/TransactionDate; td python:here.toLocalizedTime(td)" tal:content="string:$td" />
                       <!--td tal:content="item/Description | nothing" /-->
+                      <td>
+                        <a tal:omit-tag="not:exists:item/invoice_url" tal:attributes="href item/invoice_url | nothing">
+                          <span tal:omit-tag="not:exists:item/invoice_url" tal:content="string:Öppna" />
+                        </a>
+                      </td>
                       <td>
                         <a tal:attributes="href string:${context/absolute_url}/@@update-invoice?id=${item/ID}&status=1&callback=${view/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/approve_icon.png;alt string:Godkänn ${item/ID}"/></a>              
 

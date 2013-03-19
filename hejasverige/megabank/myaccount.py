@@ -13,6 +13,7 @@ import urllib
 from plone.memoize.instance import memoize
 from z3c.form import form, field
 from zope import interface, schema
+from Products.CMFCore.utils import getToolByName
 
 # Add interface hejasverige.megabank.interfaces.IMyAccountFolder to folder
 # http://belomor.zapto.org:9091/Plone/mitt-konto/manage_interfaces
@@ -90,6 +91,43 @@ class MyAccountView(grok.View):
         else:
             return 'Unknown'
 
+    @memoize
+    def getUserInvoices(self, personalid):
+        portal_url = getToolByName(self, "portal_url")
+        portal = portal_url.getPortalObject()
+        catalog = getToolByName(self, 'portal_catalog')
+        invoices_path = portal.invoices.absolute_url_path()
+
+        invoices = [dict(url=invoice.getURL(), invoiceNo=invoice.invoiceNo, externalId=invoice.externalId) for invoices in
+                    catalog({'object_provides': IInvoice.__identifier__,
+                    'path': dict(query=invoices_path),
+                    })]
+        return invoices
+
+    def addInvoiceMetadata(self, invoice_list):
+        items = []
+        try:
+            for item in invoice_list:
+                #import pdb; pdb.set_trace()
+                externalId = item.get('ID', None)
+                if externalId:
+                    catalog = getToolByName(self, 'portal_catalog')
+                    invoices = catalog(Type='Invoice', externalId=externalId)
+                    if invoices:
+                        obj = invoices[0].getObject()
+                        #item['invoice_url'] = invoices[0].getURL()
+                        item['invoice_url'] = obj.absolute_url() + '/@@download/InvoiceAttachment/' + obj.InvoiceAttachment.filename
+                        print invoices[0].id
+                        print item['invoice_url']
+
+                        import pdb; pdb.set_trace()
+
+                items.append(item)
+        except Exception, ex:
+            pass
+            #self.logger.exception('Exception occured: %s', str(ex))
+        return items
+
     def addAccountHolderNames(self, jsondictionary):
         #import pdp; pdb.trace()
         items = []
@@ -162,6 +200,7 @@ class MyAccountView(grok.View):
                     self.Invoices = bank.getInvoices(personalid=pid, status=0)
                     if self.Invoices:
                         self.Invoices = self.addAccountHolderNames(self.Invoices)
+                        self.Invoices = self.addInvoiceMetadata(self.Invoices)
                         self.hasInvoices = True
                 except ConnectionError:
                     self.hasConnectionError = True
