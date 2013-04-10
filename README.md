@@ -2,7 +2,6 @@
 About Heja Sverige Megabank
 ===========================
 
-.. contents :: :local:
 
 Introduction
 ============
