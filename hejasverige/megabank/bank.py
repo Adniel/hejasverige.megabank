@@ -38,6 +38,11 @@ class Bank():
         self.url = settings.megabank_url
 
         try:
+            self.cachetimeout = int(settings.megabank_cachetimeout)
+        except:
+            self.cachetimeout = 600
+
+        try:
             self.timeout = float(settings.megabank_timeout)
         except:
             self.timeout = 10.000
@@ -105,7 +110,33 @@ class Bank():
 
         return jsondate
 
-    def getAccount(self, personalid):
+    def setExpiration(self, secs):
+        #expires = datetime.datetime.utcnow() + datetime.timedelta(seconds=10000) # expires in 30 days
+        #return expires.strftime("%a, %d %b %Y %H:%M:%S GMT")        
+
+        from email.Utils import formatdate
+        expiration_seconds = time.time() + secs # 5 hours from now
+        expires = formatdate(expiration_seconds, usegmt=True) 
+        return expires
+
+    def getAccountFromMegabank(self, personalid):
+
+        print personalid
+        accounts_url = self.url + '/' + ACCOUNTS_URL + '/' + personalid + '/'
+        print accounts_url
+
+        r = requests.get(accounts_url, auth=self.auth,
+                         timeout=self.timeout)
+
+        if r.text:
+            payload = json.loads(r.text)
+            self.logger.info('Account Info: ' + r.text)
+            return payload
+
+        return []
+
+
+    def getAccount(self, personalid, context=None):
 
         #/accounts/<pid>
         #
@@ -131,18 +162,34 @@ class Bank():
         #    "Temporary":true
         #}
 
-        print personalid
-        accounts_url = self.url + '/' + ACCOUNTS_URL + '/' + personalid + '/'
-        print accounts_url
+        # If a context is provided. Try to return values from a cookie.
+        # If no cookie is found collect new values
+        if context:
+            cookie = context.request.get('__myaccountinfo', None)
+            if not cookie:
+                print 'Create new cookie'
+                value = self.getAccountFromMegabank(personalid)
+                context.request.response.setCookie('__myaccountinfo', value, path='/', expires=self.setExpiration(self.cachetimeout))        
+                #cookie = context.request.response.cookies.get('__myaccountinfo', None)
+                return value
+            else:
+                #import pdb; pdb.set_trace()
+                import ast
+                cookie = ast.literal_eval(cookie)
+                print 'Cookie existed'
+                if cookie.get('AccountNumber', None):
+                    print 'Cookie was ok. Returning paistry.'
+                    return cookie
+                else:
+                    print 'but cookie was corrupt. Calling bank again for new cookie.'
+                    value = self.getAccountFromMegabank(personalid)
+                    context.request.response.setCookie('__myaccountinfo', value, path='/', expires=self.setExpiration(self.cachetimeout))        
+                    return value
 
-        r = requests.get(accounts_url, auth=self.auth,
-                         timeout=self.timeout)
-        if r.text:
-            payload = json.loads(r.text)
-            self.logger.info('Account Info: ' + r.text)
-            return payload
+                
+        else:
+            return self.getAccountFromMegabank(personalid)
 
-        return []
 
     def getTransactions(self, personalid, transactionid=None, startdate=None, enddate=None):
         url = self.url + '/' + TRANSACTIONS_URL + '/' + personalid + '/'
@@ -164,9 +211,9 @@ class Bank():
                         m = p.match(str(item[k]))
                         if m:
                             item[k] = datetime.datetime(1970, 1, 1) \
-                                + datetime.timedelta(milliseconds=int(re.findall(r'\d+'
+                                    + datetime.timedelta(milliseconds=int(re.findall(r'\d+'
                                     , item[k])[0])) \
-                                + datetime.timedelta(hours=int((re.findall(r'\d+'
+                                    + datetime.timedelta(hours=int((re.findall(r'\d+'
                                     , item[k])[1])[:2]))
 
                     items.append(item)
@@ -195,7 +242,7 @@ class Bank():
             self.logger.info('No transaction details found for transaction id %s' % str(transactionid))
             return []
 
-    def getInvoices(self, personalid, invoiceid=None, startdate=None, enddate=None, status=None):
+    def getInvoices(self, personalid, invoiceid=None, startdate=None, enddate=None, status=None, outgoing='false'):
         # Status
         # 0 = new
         # 1 = approved
@@ -204,13 +251,16 @@ class Bank():
         url = url + 'status=' + str(status)
 
         if invoiceid:
-             url = url + '&invoiceid=' + str(invoiceid)
+            url = url + '&invoiceid=' + str(invoiceid)
 
         if startdate:
-             url = url + '&from=' + str(startdate)
+            url = url + '&from=' + str(startdate)
 
         if enddate:
-             url = url + '&to=' + str(enddate)
+            url = url + '&to=' + str(enddate)
+
+        if outgoing:
+            url = url + '&outgoing=' + str(outgoing)
 
         print url
 

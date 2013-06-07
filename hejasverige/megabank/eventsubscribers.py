@@ -11,9 +11,10 @@ from Products.CMFCore.WorkflowCore import WorkflowException
 #from hejasverige.megabank.bank import CommunicationError
 
 
-@grok.subscribe(IContentish, IObjectAddedEvent)
-def printMessage(obj, event):
-    print "Received event for", obj, "added to", event.newParent
+#@grok.subscribe(IContentish, IObjectAddedEvent)
+#def printMessage(obj, event):
+#    pass
+#    print "Received event for", obj, "added to", event.newParent
 
 #@grok.subscribe(IUserLoggedInEvent)
 #def printMessage(event):

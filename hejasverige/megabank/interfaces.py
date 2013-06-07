@@ -46,3 +46,9 @@ class IMegabankSettings(Interface):
                                        description=_(u'help_megabank_timeout',
                                        default=u'The timeout before stop try reading Megabank API.'
                                        ), required=False, default=u'5.000')
+
+    # TODO: Add validateor (int)
+    megabank_cachetimeout = schema.TextLine(title=_(u'Cache Timeout'),
+                                            description=_(u'help_megabank_cachetimeout',
+                                            default=u'The timeout, in seconds, used when caching accountinfo (used in for example profile portlet)'),
+                                            required=False, default=u'600')

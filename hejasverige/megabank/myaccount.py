@@ -14,7 +14,8 @@ from plone.memoize.instance import memoize
 from z3c.form import form, field
 from zope import interface, schema
 from Products.CMFCore.utils import getToolByName
-
+from hejasverige.content.interfaces import IMyPages
+from plone.app.layout.navigation.interfaces import INavigationRoot
 # Add interface hejasverige.megabank.interfaces.IMyAccountFolder to folder
 # http://belomor.zapto.org:9091/Plone/mitt-konto/manage_interfaces
 # Add "layout" as string with value @@list-transactions
@@ -64,10 +65,12 @@ def get_bank(logger=None):
 class MyAccountView(grok.View):
     """ List the transactions available for the current users
     """
-    grok.context(IMyAccountFolder)
-    grok.name('list-transactions')
+    #grok.context(IMyAccountFolder)
+    grok.context(INavigationRoot)
+    grok.name('my-megabank-account')
     grok.require('zope2.View')
     grok.template('myaccount')
+    grok.implements(IMyPages)
 
     #template = ViewPageTemplateFile('transactions_templates/listtransactionsview.pt')
     def prepareUrl(self, url):
@@ -140,6 +143,7 @@ class MyAccountView(grok.View):
         return items
 
     def update(self):
+        self.request.set('disable_border', True)
         logger = logging.getLogger("@@my-account")
 
         #s = Settings()
@@ -155,7 +159,7 @@ class MyAccountView(grok.View):
         #    pid = None
 
         pid = get_pid()
-
+        #import pdb; pdb.set_trace()
         self.hasTransactions = False
         self.hasAccount = False
         self.hasInvoices = False
@@ -173,7 +177,7 @@ class MyAccountView(grok.View):
             if bank:
                 # Get Account
                 try:
-                    self.Account = bank.getAccount(personalid=pid)
+                    self.Account = bank.getAccount(personalid=pid, context=self)
                     if self.Account:
                         self.hasAccount = True
                 except ConnectionError:

@@ -15,7 +15,7 @@ class MegabankSettingsEditForm(controlpanel.RegistryEditForm):
     def updateWidgets(self):
         super(MegabankSettingsEditForm, self).updateWidgets()
         self.widgets['megabank_url'].style = u'width: 50%;'
-        # self.widgets['megabank_onlinepayment_url'].style = u'width: 50%;'
+        self.widgets['megabank_onlinepayment_url'].style = u'width: 50%;'
 
 
 class MegabankSettingsControlPanel(controlpanel.ControlPanelFormWrapper):
