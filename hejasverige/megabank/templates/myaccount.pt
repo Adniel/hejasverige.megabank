@@ -8,16 +8,16 @@
 
 <body>
 
-<metal:main fill-slot="content-core">
-    <tal:main-macro metal:define-macro="content-core">
+<metal:main fill-slot="main">
+    <tal:main-macro metal:define-macro="main">
 
     <!--div tal:replace="structure provider:plone.abovecontenttitle" /-->
 
-    <!--h1 class="documentFirstHeading">Mitt konto</h1-->
+    <h1 class="documentFirstHeading">Mitt konto</h1>
     <p class="documentDescription">Sidan hämtades <span tal:replace="view/now"/></p>
 
     <!--div tal:replace="structure provider:plone.abovecontentbody" /-->
-    <h2>Kontoöversikt</h2>
+    <h2 class="orange padded">Kontoöversikt</h2>
     <tal:account condition="view/hasAccount">
     <table class="listing nosort messageListing">
       <!--thead>
@@ -68,8 +68,22 @@
      </script>
     </div-->
     <!-- TRANSACTIONS -->
-    <h2>Kontohändelser</h2>
+    <h2 class="orange padded">Kontohändelser</h2>
     <!--div tal:replace="structure provider:hejasverige.megabank.viewletmanager" /-->
+        <script type="text/javascript">
+        $(function($){
+          $('a#add-kollkoll').prepOverlay({
+            subtype: 'iframe',
+            closeselector: '.anonmenu > a:nth-child(2)',
+            noform: function(el) {return $.plonepopups.noformerrorshow(el, 'redirect');},
+            redirect: function () {return location.href;},    
+            width:'50%'
+
+          });
+        });
+        </script>
+    <a href="http://belomor.zapto.org:8080/" id="add-kollkoll">Registrera/hantera kopplade kort</a> (registrerade transaktioner kopplas via ditt personnummer)
+
 <tal:if  condition="view/hasConnectionError">
     <div>Det gick inte att kontakta banken. Kontohändelser kan inte visas.</div>
 </tal:if> 
@@ -136,7 +150,7 @@
     </script>
    
     <a id="betala" href="http://www.nets.se">Betala</a>
-    <h2 id="fakturor">Fakturor</h2>
+    <h2 class="orange padded" id="fakturor">Fakturor</h2>
   <div>
   <tal:if  condition="view/hasConnectionError">
       <div>Det gick inte att kontakta banken. Fakturor kan inte visas.</div>
@@ -154,13 +168,12 @@
             <table cellpadding="0" border="0" class="listing nosort messageListing">
                 <thead>
                   <th></th>
-                  <th>Fakturanummer</th>
-                  <th>Avsändare</th>
-                  <th>Id</th>
+                  <th>Faktnr</th>
+                  <th>Från</th>
+                  <!--th>Persnr</th-->
                   <th>Belopp</th>
                   <th>Inkommen</th>
-                  <th>Sista betalningsdag</th>
-                  <th></th>
+                  <th>Betaldag</th>
                   <th>&nbsp;&nbsp;</th>
                 </thead>
                 <tbody>
@@ -168,18 +181,19 @@
                     <tr cellpadding="10" class="odd" tal:define="oddrow repeat/item/odd" tal:attributes="class python:oddrow and 'even' or 'odd'" >
                       <td><input type="checkbox" id="#" tal:attributes="id string:${item/ID}" /></td>
                       <td tal:content="item/ID | nothing" />
-                      <td tal:content="item/Name | nothing" />
-                      <td tal:content="item/OffsetPersonalID | nothing" />
+                      <td>
+                      <span tal:content="item/Name | nothing" /> (
+                      <span tal:content="item/OffsetPersonalID | nothing" />)
+                      </td>
                       <td style="text-align: right;" tal:content="item/Amount | nothing" />
                       <td tal:define="time item/Created; time python:time.strftime('%H:%M:%S')" tal:content="string:$time" />
                       <td tal:define="td item/TransactionDate; td python:here.toLocalizedTime(td)" tal:content="string:$td" />
                       <!--td tal:content="item/Description | nothing" /-->
                       <td>
                         <a tal:omit-tag="not:exists:item/invoice_url" tal:attributes="href item/invoice_url | nothing">
-                          <span tal:omit-tag="not:exists:item/invoice_url" tal:content="string:Öppna" />
+                          <img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/preview.gif;alt string:Visa ${item/ID}"/>                          
+                          <!--span tal:omit-tag="not:exists:item/invoice_url" tal:content="string:Öppna" /-->
                         </a>
-                      </td>
-                      <td>
                         <a tal:attributes="href string:${context/absolute_url}/@@update-invoice?id=${item/ID}&status=1&callback=${view/get_url}"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/approve_icon.png;alt string:Godkänn ${item/ID}"/></a>              
 
                         <a id="reject" tal:attributes="href string:${context/absolute_url}/@@reject-invoice?id=${item/ID}&status=2"><img tal:attributes="src string:${context/@@plone_portal_state/portal_url}/++resource++hejasverige.megabank/reject_icon.png;alt string:Avböj ${item/ID}"/></a>                        

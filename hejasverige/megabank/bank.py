@@ -135,6 +135,40 @@ class Bank():
 
         return []
 
+    def deleteAccount(self, personalid):
+        print personalid
+        accounts_url = self.url + '/' + ACCOUNTS_URL + '/' + personalid + '/'
+
+        print accounts_url
+
+        r = requests.delete(accounts_url, auth=self.auth,
+                         timeout=self.timeout)
+
+        if r.text:
+            payload = json.loads(r.text)
+            self.logger.info('Delete account returned: ' + r.text)
+            return payload
+
+        return []
+
+    def createAccount(self, personalid, name=None, temporary=False, context=None):
+        print personalid
+        accounts_url = self.url + '/' + ACCOUNTS_URL + '/' + personalid + '/'
+        if name:
+            print name
+            accounts_url = accounts_url + '?name=' + name
+
+        print accounts_url
+
+        r = requests.post(accounts_url, auth=self.auth,
+                         timeout=self.timeout)
+
+        if r.text:
+            payload = json.loads(r.text)
+            self.logger.info('Create account returned: ' + r.text)
+            return payload
+
+        return []
 
     def getAccount(self, personalid, context=None):
 

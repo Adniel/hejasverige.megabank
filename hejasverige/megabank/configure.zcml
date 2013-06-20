@@ -35,7 +35,12 @@
   <interface interface="hejasverige.megabank.interfaces.IMyAccountFolder" />
 
   <include package="plone.app.registry" />
+  <include package=".browser" />
 
+  <browser:resourceDirectory
+    name="hejasverige.megabank"
+    directory="static" />
+ 
   <!-- Control panel -->
   <browser:page
       name="megabank-settings"
