@@ -27,6 +27,7 @@
   <includeDependencies package="." />
 
   <include package="five.grok" />
+  <include file="permissions.zcml" />
 
   <five:registerPackage package="." initialize=".initialize" />
 

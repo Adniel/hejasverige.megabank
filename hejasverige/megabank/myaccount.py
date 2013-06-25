@@ -68,7 +68,7 @@ class MyAccountView(grok.View):
     #grok.context(IMyAccountFolder)
     grok.context(INavigationRoot)
     grok.name('my-megabank-account')
-    grok.require('zope2.View')
+    grok.require('hejasverige.ViewMyAccount')
     grok.template('myaccount')
     grok.implements(IMyPages)
 
