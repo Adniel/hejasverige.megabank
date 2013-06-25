@@ -2,10 +2,10 @@
 <rolemap>
   <permissions>
     <permission name="HejaSverige: View My Account" acquire="False">
-        <!--role name="Manager" />
+        <role name="Manager" />
         <role name="Site Administrator" />
         <role name="Owner" />
-        <role name="Contributor" /-->
+        <role name="Contributor" />
         <role name="Member" />
     </permission>
   </permissions>
