@@ -4,8 +4,8 @@
                   member python:options['member'];"
 >
 <b>Hej <span tal:replace="python:member.getProperty('fullname')" /></b>
-Du har fått en ny faktura.
-Du kan se din <i>faktura</i> här <span tal:replace="python:options['portal_url']" />
+Du har fått en ny faktura i Heja Sverige.
+Du kan se och betala din faktura här <span tal:replace="python:options['portal_url']" />
 
-Mvh, Heja Sverigegubben
+Med vänlig hälsning, Heja Sverige
 </tal:root>

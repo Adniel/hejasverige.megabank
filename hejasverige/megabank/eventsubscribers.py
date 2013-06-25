@@ -3,12 +3,16 @@ from five import grok
 from smtplib import SMTPRecipientsRefused
 from zope.app.container.interfaces import IObjectAddedEvent
 from Products.PluggableAuthService.interfaces.events import IUserLoggedInEvent
-from Products.CMFCore.interfaces import IContentish
+#from Products.CMFCore.interfaces import IContentish
 from hejasverige.content.invoice import IInvoice
 from hejasverige.megabank.bank import Bank
 from Products.CMFCore.interfaces import IActionSucceededEvent
 from Products.CMFCore.utils import getToolByName
 from Products.CMFCore.WorkflowCore import WorkflowException
+
+import logging
+
+logger = logging.getLogger(__name__)
 #from hejasverige.megabank.bank import CommunicationError
 
 
@@ -19,14 +23,15 @@ from Products.CMFCore.WorkflowCore import WorkflowException
 
 @grok.subscribe(IUserLoggedInEvent)
 def getAccount(event):
-    print "Will make sure " + event.principal.getId() + " has an account."
+    logger.info("Will make sure %s has an account." % event.principal.getId())
     bank = Bank()
     #import pdb; pdb.set_trace()
-    personal_id =  event.principal.getProperty('personal_id')
-    fullname =  event.principal.getProperty('fullname')
+    personal_id = event.principal.getProperty('personal_id')
+    fullname = event.principal.getProperty('fullname')
     try:
         result = bank.getAccount(personal_id)
     except Exception, ex:
+        logger.error('Unable to access the bank. User account could not be checked: %s' % (str(ex)))
         # problems accessing the bank
         pass
     else:
@@ -46,29 +51,30 @@ def sendInvoice(obj, pos_transition, neg_transition=None):
 
     bank = Bank()
     workflowTool = getToolByName(obj, 'portal_workflow')
-    print "getToolByName says:", workflowTool
+    logger.debug("getToolByName says: %s" % workflowTool)
 
     result = None
 
     try:
         result = bank.createInvoice(obj)
     except Exception, ex:
-        print 'Resultatet blir fel: ' + str(ex)
+        logger.error('Det gick inte att skapa en faktura i banken: %s' % str(ex))
 
     if result:
-        print 'CreateInvoice result: ' + str(result)
-        print 'ID: ' + str(result.get('ID', None))
+        logger.debug('CreateInvoice result: %s' % (str(result),))
+        #logger.info('Created invoice with ID: %s' % ( str(result.get('ID', None), ) )
+        ID = result.get('ID', None)
+        logger.info('Created invoice with ID: %s' % str(ID))
         #Update Invoice object with external id
-        #import pdb; pdb.set_trace()
         obj.externalId = result.get('ID', None)
         obj.reindexObject()
 
         try:
             #import pdb; pdb.set_trace()
             workflowTool.doActionFor(obj, pos_transition, comment='All was fine')
-            print "Object", obj.id, "changed state"
-        except WorkflowException:
-            print "Could not apply workflow transition", pos_transition, ".", obj.id, "state not changed"
+            logger.debug("Object %s changed state to %s" % (obj.id, pos_transition))
+        except WorkflowException, ex:
+            logger.error("Could not apply workflow transition %s. %s state not changed: %s" % (pos_transition, obj.id, str(ex)))
 
         # Send mail about new to recipient
     else:
@@ -77,11 +83,11 @@ def sendInvoice(obj, pos_transition, neg_transition=None):
                 # TODO: set to variable comment, depending on what happened when communicated with the bank. (and
                 # display comment when listing objects, or at least on details page.)
                 workflowTool.doActionFor(obj, neg_transition, comment='Error error. Maybe time out.')
-                print "Object", obj.id, "changed state"
+                logger.debug("Object %s changed state to %s" % (obj.id, neg_transition))
             except WorkflowException, ex:
-                print "Could not apply workflow transition", neg_transition, ".", obj.id, "state not changed"
-                print str(ex)
-            print "Bank did not receive the invoice with id", obj.id
+                logger.error("Could not apply workflow transition %s. %s state not changed: %s" % (neg_transition, obj.id, str(ex)))
+
+            logger.info("Bank did not receive the invoice with id %s" % (obj.id))
     
     #import pdb; pdb.set_trace()
     # comments from transition can be read using
@@ -151,7 +157,7 @@ def sendEmailNotification(obj):
 @grok.subscribe(IInvoice, IObjectAddedEvent)
 def sendInvoiceEvent(obj, event):
     print 'Sending invoice to Megabank'
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
 
     sendInvoice(obj, 'transfer', 'fail')
     sendEmailNotification(obj)

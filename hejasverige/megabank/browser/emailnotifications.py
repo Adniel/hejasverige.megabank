@@ -2,6 +2,9 @@ from five import grok
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 
+import logging
+logger = logging.getLogger(__name__)
+
 class NewInvoiceNotification(grok.View):
     """View (called "@@newinvoicenotification"")
     """
@@ -21,7 +24,7 @@ class NewInvoiceNotification(grok.View):
             text = self.nouser(charset=self.charset, portal_url=self.portal_url, request=self.request)
             html = text
 
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         text = text.encode('utf-8')
         html = html.encode('utf-8')
         #utf8_str = unicode(iso885915_str, 'iso-8859-15').encode('utf-8')
@@ -30,7 +33,7 @@ class NewInvoiceNotification(grok.View):
         msg = MIMEMultipart('alternative')
         msg.set_charset(self.charset)
         msg['Subject'] = "Link"
-        msg['From'] = 'hej@hej.se'
+        msg['From'] = 'noreply@heja-sverige.se'
         msg['To'] = self.member.getProperty('email')
 
         part1 = MIMEText(text, 'plain')
@@ -51,10 +54,10 @@ class NewInvoiceNotification(grok.View):
         self.charset = charset
         self.portal_url = portal_url
         self.request = request
-        self.email_from_name = 'Robert'
-        self.email_from_address = 'rbe@adam.se'
+        self.email_from_name = 'Heja Sverige'
+        self.email_from_address = 'noreply@heja-sverige.se'
         self.nottype = nottype
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return self.render()
 
 

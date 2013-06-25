@@ -10,5 +10,5 @@ Hej <span tal:replace="python:member.getProperty('fullname')" />:
 Du har fått en ny faktura.
 Du kan se din faktura här <span tal:replace="python:options['portal_url']" />
 
-Mvh, Heja Sverigegubben
+Mvh, Heja Sverige
 </tal:root>
