@@ -23,6 +23,8 @@ import sys
 from plone.registry.interfaces import IRegistry
 from zope.component import getUtility
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Bank():
 
@@ -33,7 +35,7 @@ class Bank():
         # read the settings for the connection to the bank
         settings = self.getSettings()
 
-        self.logger = logging.getLogger("bank.class")
+        #self.logger = logging.getLogger("bank.class")
         self.auth = HTTPBasicAuth(settings.megabank_user, settings.megabank_password)
         self.url = settings.megabank_url
 
@@ -47,12 +49,12 @@ class Bank():
         except:
             self.timeout = 10.000
 
-        self.logger = logging.getLogger("hejasverige.megabank.bank.Bank")
+        #self.logger = logging.getLogger("hejasverige.megabank.bank.Bank")
 
-        self.logger.info('User: ' + settings.megabank_user)
-        self.logger.info('Password: ' + settings.megabank_password)
-        self.logger.info('Url: ' + self.url)
-        self.logger.info('Timeout: ' + str(self.timeout))
+        logger.info('User: ' + settings.megabank_user)
+        logger.info('Password: ' + settings.megabank_password)
+        logger.info('Url: ' + self.url)
+        logger.info('Timeout: ' + str(self.timeout))
 
     def getSettings(self):
         ''' Helper function to get the settings provided by megabank registry
@@ -61,7 +63,7 @@ class Bank():
         try:
             registry = getUtility(IRegistry)
         except:
-            print 'Failed to get utility IRegistry'
+            logger.exception('Failed to get utility IRegistry')
             return
 
         settings = registry.forInterface(IMegabankSettings)
@@ -90,14 +92,14 @@ class Bank():
                                     , item[k])[1])[:2]))
                 items.append(item)
         except Exception, e:
-            self.logger.exception('Exception occured: %s' % str(e))
+            logger.exception('Exception occured: %s' % str(e))
         return items
 
     def getJsonDate(self, date):
         init_date = datetime.datetime(1970, 1, 1)
 
         if type(date) is not datetime.datetime:
-            print('Invalid date!')
+            logger.warning('Invalid date! %s' % str(date))
             return None
         else:
             delta = date - init_date
@@ -121,25 +123,25 @@ class Bank():
 
     def getAccountFromMegabank(self, personalid):
 
-        print personalid
+        logger.debug('getAccountFromMegabank(self, %s)' % str(personalid))
         accounts_url = self.url + '/' + ACCOUNTS_URL + '/' + personalid + '/'
-        print accounts_url
+        logger.debug('Using url: %s ' % accounts_url)
 
         r = requests.get(accounts_url, auth=self.auth,
                          timeout=self.timeout)
 
         if r.text:
             payload = json.loads(r.text)
-            self.logger.info('Account Info: ' + r.text)
+            logger.info('Account Info: ' + r.text)
             return payload
 
         return []
 
     def deleteAccount(self, personalid):
-        print personalid
+        logger.debug('deleteAccount(self, %s)' % str(personalid))
         accounts_url = self.url + '/' + ACCOUNTS_URL + '/' + personalid + '/'
 
-        print accounts_url
+        logger.debug('Using url: %s ' % accounts_url)
 
         r = requests.delete(accounts_url, auth=self.auth,
                          timeout=self.timeout)
@@ -152,13 +154,13 @@ class Bank():
         return []
 
     def createAccount(self, personalid, name=None, temporary=False, context=None):
-        print personalid
+        logger.debug('createAccount(self, %s)' % str(personalid))
         accounts_url = self.url + '/' + ACCOUNTS_URL + '/' + personalid + '/'
         if name:
             print name
             accounts_url = accounts_url + '?name=' + name
 
-        print accounts_url
+        logger.debug('Using url: %s ' % accounts_url)
 
         r = requests.post(accounts_url, auth=self.auth,
                          timeout=self.timeout)
@@ -201,7 +203,7 @@ class Bank():
         if context:
             cookie = context.request.get('__myaccountinfo', None)
             if not cookie:
-                print 'Create new cookie'
+                logger.debug('__myaccountinfo cookie did not exist. Create new cookie')
                 value = self.getAccountFromMegabank(personalid)
                 context.request.response.setCookie('__myaccountinfo', value, path='/', expires=self.setExpiration(self.cachetimeout))        
                 #cookie = context.request.response.cookies.get('__myaccountinfo', None)
@@ -210,12 +212,12 @@ class Bank():
                 #import pdb; pdb.set_trace()
                 import ast
                 cookie = ast.literal_eval(cookie)
-                print 'Cookie existed'
+                logger.debug('__myaccountinfo cookie did exist. Checking cookie content.')
                 if cookie.get('AccountNumber', None):
-                    print 'Cookie was ok. Returning paistry.'
+                    logger.debug('Cookie was ok. Returning paistry.')
                     return cookie
                 else:
-                    print 'but cookie was corrupt. Calling bank again for new cookie.'
+                    logger.debug('Cookie was corrupt. Calling bank again for new cookie.')
                     value = self.getAccountFromMegabank(personalid)
                     context.request.response.setCookie('__myaccountinfo', value, path='/', expires=self.setExpiration(self.cachetimeout))        
                     return value
@@ -229,15 +231,19 @@ class Bank():
         url = self.url + '/' + TRANSACTIONS_URL + '/' + personalid + '/'
         if transactionid:
             url = url + transactionid
-        print url
+        logger.debug('getTransactions url: %s' % url)
 
         r = requests.get(url, auth=self.auth,
                          timeout=self.timeout)
 
+        logger.debug('Request returned: %s' % r.text)
+
         if r.text:
             try:
+                logger.debug('Loading returned data as JSON')
                 payload = json.loads(r.text.encode('ascii', 'ignore'))
 
+                logger.debug('Updating date format in JSON structure')                
                 items = []
                 p = re.compile('/Date\(')
                 for item in payload:
@@ -254,26 +260,26 @@ class Bank():
 
                 return items
             except Exception, e:
-                self.logger.exception('Payload could not be loaded')
-                self.logger.exception('Exception: %s' % str(e))
+                logger.exception('Payload could not be loaded')
+                logger.exception('Exception: %s' % str(e))
                 return []
         else:
-            self.logger.info('No transactions in payload')
+            logger.info('No transactions in payload')
             return []
 
     def getTransactionDetails(self, personalid, transactionid):
         url = self.url + '/' + TRANSACTIONDETAILS_URL + '/' + personalid + '/' + transactionid
-        print url
+        logger.debug('getTransactionDetails url: %s' % url)
         r = requests.get(url, auth=self.auth, timeout=self.timeout)
         if r.text:
             try:
                 payload = json.loads(r.text.encode('ascii', 'ignore'))
                 return self.convertJsonDictionaryDates(jsondictionary=[payload])
             except Exception, e:
-                self.logger.exception("Exception occured: %s" % str(e))
+                logger.exception("Exception occured: %s" % str(e))
                 return []
         else:
-            self.logger.info('No transaction details found for transaction id %s' % str(transactionid))
+            logger.info('No transaction details found for transaction id %s' % str(transactionid))
             return []
 
     def getInvoices(self, personalid, invoiceid=None, startdate=None, enddate=None, status=None, outgoing='false'):
@@ -296,16 +302,20 @@ class Bank():
         if outgoing:
             url = url + '&outgoing=' + str(outgoing)
 
-        print url
+        logger.debug('getInvoices url: %s' % url)
 
         r = requests.get(url, auth=self.auth,
                          timeout=self.timeout)
 
+        logger.debug('Request returned: %s' % r.text)
 
         if r.text:
             try:
+                logger.debug('Loading returned data as JSON')                
                 payload = json.loads(r.text.encode('ascii', 'ignore'))
                 #    import pdb; pdb.set_trace()
+
+                logger.debug('Updating date format in JSON structure')                
                 items = []
                 p = re.compile('/Date\(')
                 for item in payload:
@@ -322,10 +332,10 @@ class Bank():
 
                 return items
             except Exception, e:
-                self.logger.warning('Returned data is not JSON: %s' % str(e))
+                logger.exception('Returned data is not JSON: %s' % str(e))
                 return []
         else:
-            self.logger.info('No invoces in payload')
+            logger.info('No invoces in payload')
             return []
 
     def getCards(self, personalid):
@@ -334,7 +344,7 @@ class Bank():
             cards = account.get('Cards', [])
             return cards
 
-        self.logger.debug('No personal_id was provided to getCards')
+        logger.debug('No personal_id was provided to getCards')
         return []
 
     def updateInvoice(self, personalid, invoiceid, status, notes=None):
@@ -350,24 +360,24 @@ class Bank():
         # }
 
         url = self.url + '/' + INVOICES_URL + '/' + personalid + '/'
-        print url
+        logger.debug('updateInvoice url: %s' % url)
         headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
         if not notes:
             payload = json.dumps({'ID': int(invoiceid), 'Status': int(status),})
         else:
             payload = json.dumps({'ID': int(invoiceid), 'Status': int(status), 'Notes': notes,})
-        self.logger.info('Headers: ' + str(json.dumps(headers)))
-        self.logger.info('Posting: ' + str(payload))
+        logger.info('Headers: ' + str(json.dumps(headers)))
+        logger.info('Posting: ' + str(payload))
         result = requests.put(url, data=payload, headers=headers, auth=self.auth,
                             timeout=self.timeout)
-        self.logger.info(result.text)
+        logger.debug('Payload %s' % result.text)
         return result
 
     def createInvoice(self, obj):
         '''
             Creates an invoice 
         '''
-        print "Now, send invoice", obj.id, "to the bank"
+        logger.info("Invoice with id", obj.id, "will be sent to the bank")
 
         # POST
         #{
@@ -405,13 +415,13 @@ class Bank():
         #import pdb; pdb.set_trace()
 
         url = self.url + '/' + INVOICES_URL + '/' + obj.invoiceSender + '/'
-        print url
+        logger.debug('createInvoice url: %s' % url)
         headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
 
         payload = json.dumps(invoice)
 
-        self.logger.info('Headers: ' + str(json.dumps(headers)))
-        self.logger.info('Posting: ' + str(payload))
+        logger.info('Headers: ' + str(json.dumps(headers)))
+        logger.info('Posting: ' + str(payload))
 
         try:
             result = requests.post(url,
@@ -432,7 +442,7 @@ class Bank():
 
         #self.logger.info(result.text)
         #self.logger.info(result.text)
-        self.logger.info(result.status_code)
+        logger.info(result.status_code)
         #import pdb; pdb.set_trace()
         try:
             returned_data = json.loads(result.text)
