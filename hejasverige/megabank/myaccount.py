@@ -3,7 +3,6 @@
 from five import grok
 from plone import api
 from DateTime import DateTime
-import logging
 from requests.exceptions import ConnectionError
 from requests.exceptions import Timeout
 from hejasverige.megabank.bank import Bank
@@ -23,6 +22,9 @@ from plone.app.layout.navigation.interfaces import INavigationRoot
 
 grok.templatedir("templates")
 
+
+import logging
+logger = logging.getLogger(__name__)
 
 class INote(interface.Interface):
     text = schema.TextLine(title=u"Text",
@@ -49,16 +51,14 @@ def get_now():
     return DateTime().strftime('%Y-%m-%d %H:%M:%S')
 
 
-def get_bank(logger=None):
+def get_bank():
 
     try:
-        if logger:
-            logger.info('Creating Bank')
+        logger.info('Creating Bank')
         bank = Bank()
     except:
+        logger.exception('Unable to create the Bank...')
         bank = None
-        if logger:
-            logger.exception('Unable to create the Bank...')
     return bank
 
 
@@ -68,27 +68,30 @@ class MyAccountView(grok.View):
     #grok.context(IMyAccountFolder)
     grok.context(INavigationRoot)
     grok.name('my-megabank-account')
-    grok.require('hejasverige.ViewMyAccount')
+    grok.require('zope2.View')
     grok.template('myaccount')
     grok.implements(IMyPages)
 
     #template = ViewPageTemplateFile('transactions_templates/listtransactionsview.pt')
     def prepareUrl(self, url):
+        logger.debug('prepareUrl')
         return urllib.quote(url)
 
     def get_url(self):
+        logger.debug('get_url')
         context = self.context.aq_inner
         #import pdb ; pdb.set_trace()
         return self.prepareUrl(context.absolute_url())
 
     @memoize
     def getAccountHolderName(self, personalid):
+        logger.debug('getAccountHolderName')
         from Products.CMFCore.utils import getToolByName
 
         membership_tool = getToolByName(self, 'portal_membership')
         matching_members = [member for member in membership_tool.listMembers()
             if member.getProperty('personal_id')==personalid]
-        print matching_members
+        logger.debug('Found matching members: %s' % str(matching_members))
         if matching_members:
             return matching_members[0].getProperty('fullname')
         else:
@@ -96,6 +99,7 @@ class MyAccountView(grok.View):
 
     @memoize
     def getUserInvoices(self, personalid):
+        logger.debug('getUserInvoices')
         portal_url = getToolByName(self, "portal_url")
         portal = portal_url.getPortalObject()
         catalog = getToolByName(self, 'portal_catalog')
@@ -108,6 +112,7 @@ class MyAccountView(grok.View):
         return invoices
 
     def addInvoiceMetadata(self, invoice_list):
+        logger.debug('addInvoiceMetadata')
         items = []
         try:
             for item in invoice_list:
@@ -120,10 +125,9 @@ class MyAccountView(grok.View):
                         obj = invoices[0].getObject()
                         #item['invoice_url'] = invoices[0].getURL()
                         item['invoice_url'] = obj.absolute_url() + '/@@download/InvoiceAttachment/' + obj.InvoiceAttachment.filename
-                        print invoices[0].id
-                        print item['invoice_url']
+                        logger.debug('Invoice id: %s' % str(invoices[0].id))
+                        logger.debug('Invoice url: %s' % str(item['invoice_url']))
 
-                        import pdb; pdb.set_trace()
 
                 items.append(item)
         except Exception, ex:
@@ -132,6 +136,7 @@ class MyAccountView(grok.View):
         return items
 
     def addAccountHolderNames(self, jsondictionary):
+        logger.debug('addAccountHolderNames')
         #import pdp; pdb.trace()
         items = []
         try:
@@ -144,22 +149,8 @@ class MyAccountView(grok.View):
 
     def update(self):
         self.request.set('disable_border', True)
-        logger = logging.getLogger("@@my-account")
-
-        #s = Settings()
-        #settings = s.getSettings()
-
-        #logger.debug("Settings: " + str(settings))
-
-        #user = api.user.get_current()
-        #pid = user.getProperty('personal_id')
-
-        # if field is not defined as a personal property it becomes an object and the bank fails to load
-        #if type(pid).__name__=='object':
-        #    pid = None
 
         pid = get_pid()
-        #import pdb; pdb.set_trace()
         self.hasTransactions = False
         self.hasAccount = False
         self.hasInvoices = False
@@ -169,15 +160,17 @@ class MyAccountView(grok.View):
         user = api.user.get_current()
 
         if pid:
-            logger.info('Check user account (' + str(user)+ ')')        
+            logger.info('Creating bank for user account (' + str(user)+ ')')        
 
             # Create new bank
-            bank = get_bank(logger)
+            bank = get_bank()
 
             if bank:
                 # Get Account
+                logger.debug('bank.getAccount')
                 try:
                     self.Account = bank.getAccount(personalid=pid, context=self)
+                    logger.debug('  returned. %s' % str(self.Account))
                     if self.Account:
                         self.hasAccount = True
                 except ConnectionError:
@@ -188,8 +181,10 @@ class MyAccountView(grok.View):
                     logger.info("Timeout")
 
                 # Get Transactions
+                logger.debug('bank.getTransactions')
                 try:
                     self.transactions = bank.getTransactions(personalid=pid)
+                    logger.debug('  returned. %s' % str(self.transactions[1:1000]))
                     if self.transactions:
                         self.hasTransactions = True
                 except ConnectionError:
@@ -200,8 +195,10 @@ class MyAccountView(grok.View):
                     logger.info("Timeout")
 
                 # Get Invoices
+                logger.debug('bank.getInvoices')
                 try:
                     self.Invoices = bank.getInvoices(personalid=pid, status=0)
+                    logger.debug('  returned. %s' % str(self.Invoices[1:1000]))
                     if self.Invoices:
                         self.Invoices = self.addAccountHolderNames(self.Invoices)
                         self.Invoices = self.addInvoiceMetadata(self.Invoices)
@@ -217,7 +214,6 @@ class MyAccountView(grok.View):
             self.hasTransactions = False
             logger.info("User %s has no personal_id", str(user))
 
-        #import pdb ; pdb.set_trace()
 
 
 class TransactionDetailView(grok.View):

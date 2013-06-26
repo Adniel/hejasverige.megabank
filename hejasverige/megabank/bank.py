@@ -236,7 +236,7 @@ class Bank():
         r = requests.get(url, auth=self.auth,
                          timeout=self.timeout)
 
-        logger.debug('Request returned: %s' % r.text)
+        logger.debug('Request returned: %s' % r.text[1:1000])
 
         if r.text:
             try:
@@ -307,7 +307,7 @@ class Bank():
         r = requests.get(url, auth=self.auth,
                          timeout=self.timeout)
 
-        logger.debug('Request returned: %s' % r.text)
+        logger.debug('Request returned: %s' % r.text[1:1000])
 
         if r.text:
             try:
