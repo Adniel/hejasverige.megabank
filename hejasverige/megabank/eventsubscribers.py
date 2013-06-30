@@ -27,18 +27,22 @@ def getAccount(event):
     bank = Bank()
     #import pdb; pdb.set_trace()
     personal_id = event.principal.getProperty('personal_id')
+    if type(personal_id).__name__ == 'object':
+        personal_id = None
+
     fullname = event.principal.getProperty('fullname')
-    try:
-        result = bank.getAccount(personal_id)
-    except Exception, ex:
-        logger.error('Unable to access the bank. User account could not be checked: %s' % (str(ex)))
-        # problems accessing the bank
-        pass
-    else:
-        if not result:
-            # user had no account in the bank
-            # create account 
-            result = bank.createAccount(personalid=personal_id, name=fullname)
+    if personal_id:
+        try:
+            result = bank.getAccount(personal_id)
+        except Exception, ex:
+            logger.error('Unable to access the bank. User account could not be checked: %s' % (str(ex)))
+            # problems accessing the bank
+            pass
+        else:
+            if not result:
+                # user had no account in the bank
+                # create account 
+                result = bank.createAccount(personalid=personal_id, name=fullname)
 
     return
 #@grok.subscribe(IInvoice, IObjectAddedEvent)

@@ -68,7 +68,7 @@ class MyAccountView(grok.View):
     #grok.context(IMyAccountFolder)
     grok.context(INavigationRoot)
     grok.name('my-megabank-account')
-    grok.require('zope2.View')
+    grok.require('hejasverige.ViewMyAccount')
     grok.template('myaccount')
     grok.implements(IMyPages)
 
@@ -229,7 +229,7 @@ class TransactionDetailView(grok.View):
 
         self.now = get_now()
         self.transactionid = self.request.get('id', None)
-        self.callback = self.request.get('callback', u'http%3A//localhost%3A8080/plon/my-pages/my-account')
+        self.callback = self.request.get('callback', u'../@@my-megabank-account')
         self.hasTransaction = False
 
         pid = get_pid()

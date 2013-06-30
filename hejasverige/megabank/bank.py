@@ -51,8 +51,8 @@ class Bank():
 
         #self.logger = logging.getLogger("hejasverige.megabank.bank.Bank")
 
-        logger.info('User: ' + settings.megabank_user)
-        logger.info('Password: ' + settings.megabank_password)
+        #logger.info('User: ' + settings.megabank_user)
+        #logger.info('Password: ' + settings.megabank_password)
         logger.info('Url: ' + self.url)
         logger.info('Timeout: ' + str(self.timeout))
 
@@ -377,7 +377,7 @@ class Bank():
         '''
             Creates an invoice 
         '''
-        logger.info("Invoice with id", obj.id, "will be sent to the bank")
+        logger.info("Invoice with id %s will be sent to the bank" % str(obj.id))
 
         # POST
         #{
