@@ -70,9 +70,14 @@ class MyAccountView(grok.View):
     grok.name('my-megabank-account')
     grok.require('hejasverige.ViewMyAccount')
     grok.template('myaccount')
-    grok.implements(IMyPages)
+    grok.implements((IMyPages, IMyAccountFolder))
 
     #template = ViewPageTemplateFile('transactions_templates/listtransactionsview.pt')
+
+    @property
+    def absolute_url(self):
+        return "%s/@@%s" %(self.context.absolute_url(), self.__view_name__)
+
     def prepareUrl(self, url):
         logger.debug('prepareUrl')
         return urllib.quote(url)

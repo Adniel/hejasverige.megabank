@@ -420,7 +420,7 @@ class Bank():
 
         payload = json.dumps(invoice)
 
-        logger.info('Headers: ' + str(json.dumps(headers)))
+        logger.info('Headers: ' + str(headers))
         logger.info('Posting: ' + str(payload))
 
         try:

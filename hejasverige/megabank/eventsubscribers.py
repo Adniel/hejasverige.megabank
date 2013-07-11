@@ -58,11 +58,14 @@ def sendInvoice(obj, pos_transition, neg_transition=None):
     logger.debug("getToolByName says: %s" % workflowTool)
 
     result = None
-
+    createInvoiceResult = ''
     try:
         result = bank.createInvoice(obj)
+        createInvoiceResult = str(result)
     except Exception, ex:
-        logger.error('Det gick inte att skapa en faktura i banken: %s' % str(ex))
+        createInvoiceResult = 'Det gick inte att skapa en faktura i banken: %s' % str(ex)
+        logger.error(createInvoiceResult)
+
 
     if result:
         logger.debug('CreateInvoice result: %s' % (str(result),))
@@ -75,18 +78,20 @@ def sendInvoice(obj, pos_transition, neg_transition=None):
 
         try:
             #import pdb; pdb.set_trace()
-            workflowTool.doActionFor(obj, pos_transition, comment='All was fine')
+            workflowTool.doActionFor(obj, pos_transition, comment=createInvoiceResult)
             logger.debug("Object %s changed state to %s" % (obj.id, pos_transition))
         except WorkflowException, ex:
             logger.error("Could not apply workflow transition %s. %s state not changed: %s" % (pos_transition, obj.id, str(ex)))
 
         # Send mail about new to recipient
+        sendEmailNotification(obj)
+
     else:
         if neg_transition:
             try:
                 # TODO: set to variable comment, depending on what happened when communicated with the bank. (and
                 # display comment when listing objects, or at least on details page.)
-                workflowTool.doActionFor(obj, neg_transition, comment='Error error. Maybe time out.')
+                workflowTool.doActionFor(obj, neg_transition, comment=createInvoiceResult)
                 logger.debug("Object %s changed state to %s" % (obj.id, neg_transition))
             except WorkflowException, ex:
                 logger.error("Could not apply workflow transition %s. %s state not changed: %s" % (neg_transition, obj.id, str(ex)))
@@ -97,7 +102,6 @@ def sendInvoice(obj, pos_transition, neg_transition=None):
     # comments from transition can be read using
     # workflowTool.getStatusOf('hejasverige_invoice_workflow', obj).get('comments')
 
-    return
 
 #@memoize
 def getInvoiceRecipientFromId(self, personalid):
@@ -164,7 +168,6 @@ def sendInvoiceEvent(obj, event):
     #import pdb; pdb.set_trace()
 
     sendInvoice(obj, 'transfer', 'fail')
-    sendEmailNotification(obj)
 
 @grok.subscribe(IInvoice, IActionSucceededEvent)
 def resendInvoiceEvent(obj, event):

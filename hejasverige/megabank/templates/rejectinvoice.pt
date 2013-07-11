@@ -3,7 +3,9 @@
 <form action="#" method="post" name="form" tal:attributes="action string:${context/absolute_url}/@@update-invoice?id=${view/invoiceid}&status=${view/status}">
 	<dl>
 		<dt>
-			<label for="reason">Ev. anledning:</label>
+			<div class="documentDescription orange">Om du anser att fakturan inte stämmer med dina uppgifter. 
+I rutan nedan kan du lämna kommentarer och skicka ett meddelande till avsändaren av fakturan.</div>
+			<label for="reason">Meddelande</label>
 			<input type="text" name="reason" />
 		</dt>
 	</dl>
