@@ -151,7 +151,7 @@
     });
     </script>
    
-    <a id="betala" href="http://www.nets.se">Betala</a>
+    <!--a id="betala" href="http://www.nets.se">Betala</a-->
     <h2 class="orange padded" id="fakturor">Fakturor</h2>
   <div>
   <tal:if  condition="view/hasConnectionError">
