@@ -84,7 +84,7 @@
           });
         });
         </script>
-    <a href="http://belomor.zapto.org:8080/" id="add-kollkoll">Registrera/hantera kopplade kort</a> (registrerade transaktioner kopplas via ditt personnummer)
+    <a href="http://belomor.zapto.org:8080/" id="add-kollkoll">Bekräfta lösenord</a> (registrerade transaktioner kopplas via ditt personnummer)
 
 <tal:if  condition="view/hasConnectionError">
     <div>Det gick inte att kontakta banken. Kontohändelser kan inte visas.</div>
