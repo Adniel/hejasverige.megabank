@@ -6,6 +6,7 @@ from requests.exceptions import ConnectionError
 from requests.exceptions import Timeout
 
 from Products.CMFPlone.utils import safe_unicode
+from Products.PythonScripts.standard import url_quote
 from plone.registry.interfaces import IRegistry
 from zope.component import getUtility
 
@@ -160,7 +161,7 @@ class Bank():
         if name:
             # Zope.SiteErrorLog 1375955955.10.328894126255
             # names with unicode characters renders UnicodeError: Ordinal not in range...
-            name = safe_unicode(name)
+            name = url_quote(name)
             accounts_url = accounts_url + '?name=' + name
 
         logger.debug('Using url: %s ' % accounts_url)
