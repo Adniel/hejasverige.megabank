@@ -26,6 +26,7 @@ setup(name='hejasverige.megabank',
       install_requires=[
           'setuptools',
           'Plone',
+          'collective.beaker',
           'requests',
           'hejasverige.content',
           'plone.app.registry',

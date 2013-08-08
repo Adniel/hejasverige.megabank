@@ -159,6 +159,29 @@
   </tal:if> 
   <tal:elseif condition="not: view/hasConnectionError">     
       <tal:transactions condition="view/hasInvoices">
+        <script> 
+            $(document).ready(function() { 
+              jQuery(".invoiceCheckbox").click(function() {
+                 var $checkbox = jQuery(this);
+                 var checkboxData = "checkboxvalue=" + $checkbox.val();
+
+                 jQuery.ajax({
+                    url: "",
+                    type: "POST",
+                    data: checkboxData,
+                    cache: false,
+                    dataType: "json",
+                    success: function(data) {
+                        if(data["success"]) {
+                          //do some other stuff if you have to
+                          //this is based on the assumption that you're sending back
+                          //JSON data that has a success property defined
+                        }
+                    }
+                });                
+              });
+            }); 
+        </script>         
         <div tal:define="list view/Invoices;
                      Batch python:modules['Products.CMFPlone'].Batch;
                      ib_size python:4;
@@ -166,7 +189,7 @@
                      ib_start request/ib_start | ib_start;
                      batch python:Batch(list, ib_size, int(ib_start), b_start_str='ib_start', orphan=1);"
              tal:condition="list">
-            <form name="" action="#" method="post" tal:attributes="action string:${context/absolute_url}/@@prepare-invoices">
+            <form name="myForm" id="myForm" action="#" method="post" tal:attributes="action string:${context/absolute_url}/${view/__name__}">
             <table cellpadding="0" border="0" class="listing nosort messageListing">
                 <thead>
                   <th></th>
@@ -181,7 +204,7 @@
                 <tbody>
                 <tal:invoices tal:repeat="item batch">
                     <tr cellpadding="10" class="odd" tal:define="oddrow repeat/item/odd" tal:attributes="class python:oddrow and 'even' or 'odd'" >
-                      <td><input type="checkbox" id="#" tal:attributes="id string:${item/ID}" /></td>
+                      <td><input type="checkbox" id="#" tal:attributes="id string:${item/ID}" class="invoiceCheckbox"/></td>
                       <td tal:content="item/ID | nothing" />
                       <td>
                       <span tal:content="item/Name | nothing" /> (

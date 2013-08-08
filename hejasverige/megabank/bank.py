@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import requests
 from requests.auth import HTTPBasicAuth
+from requests.exceptions import ConnectionError
+from requests.exceptions import Timeout
+
+from Products.CMFPlone.utils import safe_unicode
+from plone.registry.interfaces import IRegistry
+from zope.component import getUtility
 
 from hejasverige.megabank.config import TRANSACTIONDETAILS_URL
 from hejasverige.megabank.config import TRANSACTIONS_URL
@@ -10,18 +17,12 @@ from hejasverige.megabank.config import INVOICES_URL
 from hejasverige.megabank.interfaces import IMegabankSettings
 
 import json
-import requests
-from requests.exceptions import ConnectionError
-from requests.exceptions import Timeout
 
 import datetime
 import time
-import logging
 import re
 import sys
 
-from plone.registry.interfaces import IRegistry
-from zope.component import getUtility
 
 import logging
 logger = logging.getLogger(__name__)
@@ -157,6 +158,9 @@ class Bank():
         logger.debug('createAccount(self, %s)' % str(personalid))
         accounts_url = self.url + '/' + ACCOUNTS_URL + '/' + personalid + '/'
         if name:
+            # Zope.SiteErrorLog 1375955955.10.328894126255
+            # names with unicode characters renders UnicodeError: Ordinal not in range...
+            name = safe_unicode(name)
             print name
             accounts_url = accounts_url + '?name=' + name
 
