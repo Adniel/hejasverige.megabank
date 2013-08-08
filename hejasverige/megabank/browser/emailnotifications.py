@@ -5,6 +5,10 @@ from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 import logging
 logger = logging.getLogger(__name__)
 
+
+# portal.getProperty('email_from_address')
+# portal.getProperty('email_from_name')
+
 class NewInvoiceNotification(grok.View):
     """View (called "@@newinvoicenotification"")
     """

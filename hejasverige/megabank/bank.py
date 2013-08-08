@@ -149,7 +149,7 @@ class Bank():
 
         if r.text:
             payload = json.loads(r.text)
-            self.logger.info('Delete account returned: ' + r.text)
+            logger.info('Delete account returned: ' + r.text)
             return payload
 
         return []
@@ -161,7 +161,6 @@ class Bank():
             # Zope.SiteErrorLog 1375955955.10.328894126255
             # names with unicode characters renders UnicodeError: Ordinal not in range...
             name = safe_unicode(name)
-            print name
             accounts_url = accounts_url + '?name=' + name
 
         logger.debug('Using url: %s ' % accounts_url)
@@ -171,7 +170,7 @@ class Bank():
 
         if r.text:
             payload = json.loads(r.text)
-            self.logger.info('Create account returned: ' + r.text)
+            logger.info('Create account returned: ' + r.text)
             return payload
 
         return []

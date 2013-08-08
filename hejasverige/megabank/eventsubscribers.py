@@ -154,13 +154,9 @@ def sendEmailNotification(obj):
     except SMTPRecipientsRefused:
         # Don't disclose email address on failure
         raise SMTPRecipientsRefused('Recipient address rejected by server')
-    
-    #try:
-    #    self.context.MailHost.send(root.as_string(), immediate=True)
-    #except Exception as e:
-    #    log = logging.getLogger("MailDataManager")
-    #    log.exception(e)
-    #return
+    except Exception as e:
+        # Do not abort invoice creation process even if notification mail fails...
+        logger.exception(e)
 
 @grok.subscribe(IInvoice, IObjectAddedEvent)
 def sendInvoiceEvent(obj, event):
