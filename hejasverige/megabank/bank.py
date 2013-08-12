@@ -446,7 +446,8 @@ class Bank():
 
         #self.logger.info(result.text)
         #self.logger.info(result.text)
-        logger.info(result.status_code)
+        logger.info('Bank status: ' + str(result.status_code))
+        logger.info('Bank returns: ' + result.text)
         #import pdb; pdb.set_trace()
         try:
             returned_data = json.loads(result.text)

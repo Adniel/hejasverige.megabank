@@ -163,25 +163,25 @@
             $(document).ready(function() { 
               jQuery(".invoiceCheckbox").click(function() {
                  var $checkbox = jQuery(this);
-                 var checkboxData = "checkboxvalue=" + $checkbox.val();
+                 var checkboxData = "checkboxvalue=" + $checkbox.is(":checked") + "&checkboxid=" + $checkbox.attr("id") + "&amount=" + $checkbox.attr("data-amount");
+                 var url = $('#myForm').attr('action');
+                 //alert(checkboxData)
 
                  jQuery.ajax({
-                    url: "",
+                    url: url,
                     type: "POST",
                     data: checkboxData,
                     cache: false,
-                    dataType: "json",
+                    //dataType: "text",
                     success: function(data) {
-                        if(data["success"]) {
-                          //do some other stuff if you have to
-                          //this is based on the assumption that you're sending back
-                          //JSON data that has a success property defined
-                        }
+                      $("#selectedInvoicesArea").html(data)
+                      //alert(data)
                     }
                 });                
               });
             }); 
-        </script>         
+        </script> 
+        <div id="selectedInvoicesArea" />        
         <div tal:define="list view/Invoices;
                      Batch python:modules['Products.CMFPlone'].Batch;
                      ib_size python:4;
@@ -189,7 +189,7 @@
                      ib_start request/ib_start | ib_start;
                      batch python:Batch(list, ib_size, int(ib_start), b_start_str='ib_start', orphan=1);"
              tal:condition="list">
-            <form name="myForm" id="myForm" action="#" method="post" tal:attributes="action string:${context/absolute_url}/${view/__name__}">
+            <form name="myForm" id="myForm" action="#" method="post" tal:attributes="action string:${context/absolute_url}/${view/__name__}/@@storemarkedinvoices">
             <table cellpadding="0" border="0" class="listing nosort messageListing">
                 <thead>
                   <th></th>
@@ -204,7 +204,7 @@
                 <tbody>
                 <tal:invoices tal:repeat="item batch">
                     <tr cellpadding="10" class="odd" tal:define="oddrow repeat/item/odd" tal:attributes="class python:oddrow and 'even' or 'odd'" >
-                      <td><input type="checkbox" id="#" tal:attributes="id string:${item/ID}" class="invoiceCheckbox"/></td>
+                      <td><input type="checkbox" id="#" tal:attributes="id string:${item/ID};data-amount string:${item/Amount}" class="invoiceCheckbox"/></td>
                       <td tal:content="item/ID | nothing" />
                       <td>
                       <span tal:content="item/Name | nothing" /> (
@@ -226,7 +226,6 @@
                 </tal:invoices>
                 </tbody>
             </table>
-            <input type="button" class="button" id="addinvoices" value="Lägg till"/>
             </form>
             <div metal:use-macro="here/batch_macros/macros/navigation" />
 
