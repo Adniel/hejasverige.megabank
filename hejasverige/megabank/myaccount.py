@@ -289,7 +289,7 @@ class UpdateInvoiceView(grok.View):
         pid = get_pid()
         result = "Inget personnummer tillgängligt för avsändare"
         if pid and self.invoiceid and self.status:
-            bank = get_bank(logger)
+            bank = get_bank()
             result = "Problem när anslutningen till banken skulle upprättas"
             if bank:
                 try:
