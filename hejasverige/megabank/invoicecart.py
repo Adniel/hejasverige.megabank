@@ -25,7 +25,10 @@ class InvoiceCart(grok.View):
     grok.context(INavigationRoot)
 
     def render(self):
-        session = ISession(self.request)
+        session = ISession(self.request, None)
+
+        if session is None:
+            return None
 
         if 'testsessionkey' in self.request:
             session['testsessionkey'] = dict(key1='Hey', key2='Boy')
@@ -73,6 +76,10 @@ class CheckOut(grok.View):
 
     def update(self):
         """ Renders the view """
+        session = ISession(self.request, None)
+
+        if session is None:
+            return None
 
         if 'form.button.Submit' in self.request:
             #import pdb; pdb.set_trace()
@@ -104,13 +111,13 @@ class CheckOut(grok.View):
             bank = Bank()
             obj = dict()
             obj['amount'] = float(self.request['card_amount'])
-            if len(self.session()[SessionKeys.selected_invoices]) > 1:
+            if len(session[SessionKeys.selected_invoices]) > 1:
                 invoiceword = 'fakturor'
             else:
                 invoiceword = 'faktura'
 
-            obj['description'] = "Onlinebetalning av %s (%s) " % (invoiceword, ", ".join([x.get('invoiceno') for x in self.session()[SessionKeys.selected_invoices]]))
-            obj['invoices'] = [int(x.get('id')) for x in self.session()[SessionKeys.selected_invoices]]
+            obj['description'] = "Onlinebetalning av %s (%s) " % (invoiceword, ", ".join([x.get('invoiceno') for x in session[SessionKeys.selected_invoices]]))
+            obj['invoices'] = [int(x.get('id')) for x in session[SessionKeys.selected_invoices]]
             obj['url'] = self.context.absolute_url() + '/@@psplandingpage'
             pid = self.myinfo().get('pid')
 
@@ -141,7 +148,10 @@ class PspLandingPage(grok.View):
     grok.require('hejasverige.ViewMyAccount')
 
     def render(self):
-        session = ISession(self.request)        
+        session = ISession(self.request, None)
+
+        if session is None:
+            return None
         utils = getToolByName(self, "plone_utils")
         url = self.context.absolute_url() + '/' + MEGABANKVIEW_URL
 
@@ -172,7 +182,7 @@ class StoreMarkedInvoices(grok.View):
     grok.require('hejasverige.ViewMyAccount')
 
     def render(self):
-        session = ISession(self.request)
+        session = ISession(self.request, None)
 
         if session is None:
             return None
