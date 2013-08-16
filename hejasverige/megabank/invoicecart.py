@@ -25,7 +25,7 @@ class InvoiceCart(grok.View):
     grok.context(INavigationRoot)
 
     def render(self):
-        session = ISession(self.request, None)
+        session = ISession(self.request)
 
         if 'testsessionkey' in self.request:
             session['testsessionkey'] = dict(key1='Hey', key2='Boy')
@@ -52,7 +52,7 @@ class CheckOut(grok.View):
 
     @memoize
     def session(self):
-        return ISession(self.request, None)
+        return ISession(self.request)
 
     @memoize
     def myinfo(self):
@@ -141,7 +141,7 @@ class PspLandingPage(grok.View):
     grok.require('hejasverige.ViewMyAccount')
 
     def render(self):
-        session = ISession(self.request, None)        
+        session = ISession(self.request)        
         utils = getToolByName(self, "plone_utils")
         url = self.context.absolute_url() + '/' + MEGABANKVIEW_URL
 
@@ -172,7 +172,7 @@ class StoreMarkedInvoices(grok.View):
     grok.require('hejasverige.ViewMyAccount')
 
     def render(self):
-        session = ISession(self.request, None)
+        session = ISession(self.request)
 
         if session is None:
             return None
@@ -213,15 +213,17 @@ class StoreMarkedInvoices(grok.View):
 
             if not self.request['checkboxid'] in [l.get('id') for l in session[SessionKeys.selected_invoices]]:
                 session[SessionKeys.selected_invoices].append(dict(id=self.request['checkboxid'], amount=amount, invoiceno=self.request['invoiceno']))
-                print session[SessionKeys.selected_invoices]
+                logger.debug(session[SessionKeys.selected_invoices])
         else:
             session[SessionKeys.selected_amount] = session[SessionKeys.selected_amount] - amount
             session[SessionKeys.selected_invoices] = [x for x in session[SessionKeys.selected_invoices] if x.get('id', None) != self.request['checkboxid']]
 
         #import pdb; pdb.set_trace()
-
-        session.save()
-
+        try:
+            session.save()
+            logger.debug("Session saved...")
+        except:
+            logger.exception("Session not saved!")
         #session['megabank.selectedamount'] =
 
         return str(session[SessionKeys.selected_amount])
