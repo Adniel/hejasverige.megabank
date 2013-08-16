@@ -1,5 +1,7 @@
 TRANSACTIONS_URL = 'transactions'
 TRANSACTIONDETAILS_URL = 'transactions/details'
+ONLINETRANSACTIONS_URL = 'transactions/online'
 ACCOUNTS_URL = 'accounts'
 CARDS_URL = 'cards'
 INVOICES_URL = 'invoices'
+MEGABANKVIEW_URL = '@@my-megabank-account'

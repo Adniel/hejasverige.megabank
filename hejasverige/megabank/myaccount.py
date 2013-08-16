@@ -6,7 +6,7 @@ from DateTime import DateTime
 from requests.exceptions import ConnectionError
 from requests.exceptions import Timeout
 from hejasverige.megabank.bank import Bank
-from hejasverige.megabank.settings import Settings
+#from hejasverige.megabank.settings import Settings
 from hejasverige.megabank.interfaces import IMyAccountFolder
 import urllib
 from plone.memoize.instance import memoize
@@ -15,6 +15,12 @@ from zope import interface, schema
 from Products.CMFCore.utils import getToolByName
 from hejasverige.content.interfaces import IMyPages
 from plone.app.layout.navigation.interfaces import INavigationRoot
+from hejasverige.megabank import _
+from hejasverige.megabank.session import SessionKeys
+from collective.beaker.interfaces import ISession
+from hejasverige.content.invoice import IInvoice
+from hejasverige.megabank.config import MEGABANKVIEW_URL
+
 # Add interface hejasverige.megabank.interfaces.IMyAccountFolder to folder
 # http://belomor.zapto.org:9091/Plone/mitt-konto/manage_interfaces
 # Add "layout" as string with value @@list-transactions
@@ -25,6 +31,7 @@ grok.templatedir("templates")
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 class INote(interface.Interface):
     text = schema.TextLine(title=u"Text",
@@ -41,7 +48,8 @@ def get_pid():
     user = api.user.get_current()
     pid = user.getProperty('personal_id')
 
-    # if field is not defined as a personal property it becomes an object and the bank fails to load
+    # if field is not defined as a personal property it becomes an
+    # object and the bank fails to load
     if type(pid).__name__ == 'object':
         pid = None
     return pid
@@ -72,11 +80,9 @@ class MyAccountView(grok.View):
     grok.template('myaccount')
     grok.implements((IMyPages, IMyAccountFolder))
 
-    #template = ViewPageTemplateFile('transactions_templates/listtransactionsview.pt')
-
     @property
     def absolute_url(self):
-        return "%s/@@%s" %(self.context.absolute_url(), self.__view_name__)
+        return "%s/@@%s" % (self.context.absolute_url(), self.__view_name__)
 
     def prepareUrl(self, url):
         logger.debug('prepareUrl')
@@ -89,13 +95,26 @@ class MyAccountView(grok.View):
         return self.prepareUrl(context.absolute_url())
 
     @memoize
+    def id_in_session(self, id):
+        session = ISession(self.request, None)
+        #import pdb; pdb.set_trace()
+        try:
+            keys = session[SessionKeys.selected_invoices]
+        except:
+            return 0
+        else:
+            if id in [int(i.get('id')) for i in keys]:
+                return 1
+        return 0
+
+    @memoize
     def getAccountHolderName(self, personalid):
         logger.debug('getAccountHolderName')
-        from Products.CMFCore.utils import getToolByName
+        #from Products.CMFCore.utils import getToolByName
 
         membership_tool = getToolByName(self, 'portal_membership')
         matching_members = [member for member in membership_tool.listMembers()
-            if member.getProperty('personal_id')==personalid]
+                            if member.getProperty('personal_id') == personalid]
         logger.debug('Found matching members: %s' % str(matching_members))
         if matching_members:
             return matching_members[0].getProperty('fullname')
@@ -110,10 +129,12 @@ class MyAccountView(grok.View):
         catalog = getToolByName(self, 'portal_catalog')
         invoices_path = portal.invoices.absolute_url_path()
 
-        invoices = [dict(url=invoice.getURL(), invoiceNo=invoice.invoiceNo, externalId=invoice.externalId) for invoices in
+        invoices = [dict(url=invoice.getURL(),
+                         invoiceNo=invoice.invoiceNo,
+                         externalId=invoice.externalId) for invoice in
                     catalog({'object_provides': IInvoice.__identifier__,
-                    'path': dict(query=invoices_path),
-                    })]
+                             'path': dict(query=invoices_path),
+                             })]
         return invoices
 
     def addInvoiceMetadata(self, invoice_list):
@@ -133,16 +154,14 @@ class MyAccountView(grok.View):
                         logger.debug('Invoice id: %s' % str(invoices[0].id))
                         logger.debug('Invoice url: %s' % str(item['invoice_url']))
 
-
                 items.append(item)
-        except Exception, ex:
+        except Exception:
             pass
             #self.logger.exception('Exception occured: %s', str(ex))
         return items
 
     def addAccountHolderNames(self, jsondictionary):
         logger.debug('addAccountHolderNames')
-        #import pdp; pdb.trace()
         items = []
         try:
             for item in jsondictionary:
@@ -165,7 +184,7 @@ class MyAccountView(grok.View):
         user = api.user.get_current()
 
         if pid:
-            logger.info('Creating bank for user account (' + str(user)+ ')')        
+            logger.info('Creating bank for user account (' + str(user)+ ')')
 
             # Create new bank
             bank = get_bank()
@@ -220,7 +239,6 @@ class MyAccountView(grok.View):
             logger.info("User %s has no personal_id", str(user))
 
 
-
 class TransactionDetailView(grok.View):
     grok.context(IMyAccountFolder)
     grok.name('transactions-detail')
@@ -234,7 +252,7 @@ class TransactionDetailView(grok.View):
 
         self.now = get_now()
         self.transactionid = self.request.get('id', None)
-        self.callback = self.request.get('callback', u'../@@my-megabank-account')
+        self.callback = self.request.get('callback', u'../' + MEGABANKVIEW_URL)
         self.hasTransaction = False
 
         pid = get_pid()
@@ -254,6 +272,7 @@ class TransactionDetailView(grok.View):
                 except:
                     logger.exception('Unable to get transactiondetails for transaction %s' % (self.transactionid))
 
+
 class RejectInvoiceForm(grok.View):
     grok.context(IMyAccountFolder)
     grok.name('reject-invoice')
@@ -265,7 +284,6 @@ class RejectInvoiceForm(grok.View):
         '''
         self.invoiceid = self.request.get('id', None)
         self.status = self.request.get('status', None)
-
 
 
 class UpdateInvoiceView(grok.View):
@@ -286,6 +304,8 @@ class UpdateInvoiceView(grok.View):
         self.reason = self.request.get('reason', None)
         print self.reason
 
+        portal_message_type = 'error'
+
         pid = get_pid()
         result = "Inget personnummer tillgängligt för avsändare"
         if pid and self.invoiceid and self.status:
@@ -296,18 +316,19 @@ class UpdateInvoiceView(grok.View):
                     updated_invoice = bank.updateInvoice(personalid=pid, status=self.status, invoiceid=self.invoiceid, notes=self.reason)
                     logger.info(updated_invoice)
                     result = "Fakturan uppdaterad"
+                    portal_message_type = 'information'
                 except Timeout:
                     result = "Kunde inte uppdatera fakturan. Banken svarar inte."
                     logger.exception('Timout! Unable to update invoice with id %s' % (self.invoiceid))
-                    return result
                 except ConnectionError:
                     result = "Kunde inte uppdatera fakturan. Banken svarar inte."
                     logger.exception('ConnectionError! Unable to update invoice with id %s' % (self.invoiceid))
-                    return result
                 except:
                     result = "Kunde inte uppdatera fakturan. Obegripligt fel."
                     logger.exception('Unable to update invoice with id %s' % (self.invoiceid))
-                    return result
-        return result
 
+            utils = getToolByName(self, "plone_utils")
+            utils.addPortalMessage(_(result), portal_message_type)
 
+            url = self.context.absolute_url
+            return self.request.response.redirect(url)

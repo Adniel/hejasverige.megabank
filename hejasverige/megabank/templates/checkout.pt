@@ -1,0 +1,139 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="sv"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="sv"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="hejasverige.megabank">
+<body>
+
+<metal:main fill-slot="main">
+    <tal:main-macro metal:define-macro="main">
+
+    <!--div tal:replace="structure provider:plone.abovecontenttitle" /-->
+    <script>
+
+    $(function() {
+        $('#points_amount').blur(function()
+        {
+          sumFields($('#points_amount'));
+        });
+    });
+
+    $(function() {
+        $('#card_amount').blur(function()
+        {
+          sumFields($('#card_amount'));
+        });
+    });
+
+
+    function sumFields(obj) {
+
+      var card = $('#card_amount');
+      var points = $('#points_amount');
+
+      // set to 0 if not number
+      if(!$.isNumeric(points.val())){
+        points.val('0');
+      }
+
+      if(!$.isNumeric(card.val())){
+        card.val('0');
+      }
+
+      // if less than 0
+      if(Number(points.val()) < 0){
+        points.val('0');
+      }
+
+      if(Number(card.val()) < 0){
+        card.val('0');
+      }
+
+      // set points to balance if it is set to bigger
+      if(Number(points.val()) > Number($('#balance').val())) {
+        points.val($('#balance').val());
+      }
+
+      // Adjust larger values to amount to pay
+      if(Number(points.val()) > Number($('#total_amount').val())) {
+        points.val($('#total_amount').val());
+      }
+
+      if(obj[0] === $('#card_amount')[0]) {
+        points.val(Number($('#total_amount').val()) - Number(card.val()));
+        points.blur()
+      } else {
+        card.val(Number($('#total_amount').val()) - Number(points.val()));
+      }
+
+    }
+
+
+    </script>
+    <h1 class="documentFirstHeading">Betala</h1>
+    <p class="documentDescription">Välj betalmedel</p>
+    <p>Om du fyllt i ett kortbelopp när du trycker på Betala kommer du att skickas till vår betalningsförmedlare för att välja betalmetod. Om du använder poäng på ditt Heja Sverige-konto kommer dessa att räknas av från ditt konto direkt.</p>
+    <!--span tal:content="view/session" /-->
+    <p>Betalning av fakturor:
+    <tal:invoices tal:repeat="item python:view.session().get('megabank.selected_invoices')">
+            <span tal:replace="item/invoiceno"></span>, 
+    </tal:invoices>
+  </p>
+    <form tal:define="info view/myinfo" method="post" action="#" tal:attributes="action string:${context/absolute_url}/${view/__name__}">
+      <span tal:replace="structure context/@@authenticator/authenticator" />      
+      <input name="balance" id="balance" type="hidden" tal:attributes="value info/balance" />
+      <table>
+        <tr>
+        <td>
+          <label for="total_amount">Summa att betala:</label>
+        </td>
+        <td>
+          <span tal:replace="info/amount_to_pay" />
+          <input type="hidden" name="total_amount" id="total_amount" tal:attributes="value info/amount_to_pay" disabled/>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="points_amount">Tillgängligt saldo:</label>
+        </td>
+        <td>
+          <span tal:content="info/balance"/>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          <input name="points_amount" id="points_amount" value="0"/>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="card_amount">Belopp att betala via bank/kort:</label>
+        </td>
+        <td>
+          <input name="card_amount" id="card_amount" tal:attributes="value info/amount_to_pay"/>
+        </td>
+      </tr>
+        <!--li>
+          <label for="credit_amount">Kredit:</label>
+          <input name="credit_amount" id="credit_amount" readonly/>
+        </li-->
+        <tr>
+          <td/>
+          <td>
+            <input type="submit" class="context" name="form.button.Submit" id="form.button.Submit" value="Betala"/>
+            <a href="#" tal:attributes="href string:${context/absolute_url}/@@my-megabank-account">Avbryt</a>
+          </td>
+        </tr>
+      </table>
+      <div id="summa" />
+    </form>
+
+    </tal:main-macro>
+</metal:main>
+
+</body>
+</html>

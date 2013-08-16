@@ -15,6 +15,7 @@ from hejasverige.megabank.config import TRANSACTIONS_URL
 from hejasverige.megabank.config import ACCOUNTS_URL
 from hejasverige.megabank.config import CARDS_URL
 from hejasverige.megabank.config import INVOICES_URL
+from hejasverige.megabank.config import ONLINETRANSACTIONS_URL
 from hejasverige.megabank.interfaces import IMegabankSettings
 
 import json
@@ -133,8 +134,12 @@ class Bank():
                          timeout=self.timeout)
 
         if r.text:
-            payload = json.loads(r.text)
             logger.info('Account Info: ' + r.text)
+            try:
+                payload = json.loads(r.text)
+            except Exception, ex:
+                logger.exception('Unable to read bank response as JSON. Exception: %s' % str(ex))
+                payload = []
             return payload
 
         return []
@@ -149,8 +154,12 @@ class Bank():
                          timeout=self.timeout)
 
         if r.text:
-            payload = json.loads(r.text)
             logger.info('Delete account returned: ' + r.text)
+            try:
+                payload = json.loads(r.text)
+            except Exception, ex:
+                logger.exception('Unable to read bank response as JSON. Exception: %s' % str(ex))
+                payload = []
             return payload
 
         return []
@@ -170,8 +179,13 @@ class Bank():
                          timeout=self.timeout)
 
         if r.text:
-            payload = json.loads(r.text)
             logger.info('Create account returned: ' + r.text)
+            try:
+                payload = json.loads(r.text)
+            except Exception, ex:
+                logger.exception('Unable to read bank response as JSON. Exception: %s' % str(ex))
+                payload = []
+
             return payload
 
         return []
@@ -217,14 +231,15 @@ class Bank():
                 import ast
                 cookie = ast.literal_eval(cookie)
                 logger.debug('__myaccountinfo cookie did exist. Checking cookie content.')
-                if cookie.get('AccountNumber', None):
-                    logger.debug('Cookie was ok. Returning paistry.')
-                    return cookie
-                else:
-                    logger.debug('Cookie was corrupt. Calling bank again for new cookie.')
-                    value = self.getAccountFromMegabank(personalid)
-                    context.request.response.setCookie('__myaccountinfo', value, path='/', expires=self.setExpiration(self.cachetimeout))        
-                    return value
+                if cookie:
+                    if cookie.get('AccountNumber', None):
+                        logger.debug('Cookie was ok. Returning paistry.')
+                        return cookie
+
+                logger.debug('Cookie was corrupt. Calling bank again for new cookie.')
+                value = self.getAccountFromMegabank(personalid)
+                context.request.response.setCookie('__myaccountinfo', value, path='/', expires=self.setExpiration(self.cachetimeout))        
+                return value
 
                 
         else:
@@ -339,7 +354,7 @@ class Bank():
                 logger.exception('Returned data is not JSON: %s' % str(e))
                 return []
         else:
-            logger.info('No invoces in payload')
+            logger.info('No invoices in payload')
             return []
 
     def getCards(self, personalid):
@@ -453,5 +468,120 @@ class Bank():
             returned_data = json.loads(result.text)
         except:
             returned_data = None
+
+        return returned_data
+
+    def registerOnlineTransaction(self, obj, pid):
+        logger.info("Register online payment for invoices for %s" % str(pid))
+
+        onlinetransaction = {"Amount": obj.get('amount', None),
+                             "Description": obj.get('description', None),
+                             "Invoices": obj.get('invoices', None),
+                             "Url": obj.get('url', None)
+                            }
+
+
+        url = self.url + '/' + ONLINETRANSACTIONS_URL + '/register/' + pid + '/'
+        logger.debug('registerOnlineTransaction url: %s' % url)
+        headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
+
+        payload = json.dumps(onlinetransaction)
+
+        logger.info('Headers: ' + str(headers))
+        logger.info('Posting: ' + str(payload))
+
+        try:
+            result = requests.post(url,
+                                   data=payload,
+                                   headers=headers,
+                                   auth=self.auth,
+                                   timeout=self.timeout
+                                   )
+        except:
+            raise
+
+
+        # {url: '', status: '', text, ''}
+        # status 0 är bra
+        #    redirect to url
+        # annars visa text och avbryt
+
+        try:
+            returned_data = json.loads(result.text)
+            logger.info('Bank status: ' + str(result.status_code))
+            logger.info('Bank returns: ' + result.text)
+        except:
+            returned_data = None
+            logger.info('Bank status: ' + str(result.status_code))
+            try:
+                logger.info('B ank returns: ' + result.text)
+            except:
+                logger.info('B ank returns: ' + result)
+
+
+
+        return returned_data
+
+    def commitOnlineTransaction(self, transactionid):
+        logger.info("Commit online payment for invoices with transactionid %s" % str(transactionid))
+
+
+        url = self.url + '/' + ONLINETRANSACTIONS_URL + '/commit/' + transactionid + '/'
+        logger.debug('commitOnlineTransaction url: %s' % url)
+        headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
+
+        logger.info('Headers: ' + str(headers))
+
+        try:
+            result = requests.post(url,
+                                   headers=headers,
+                                   auth=self.auth,
+                                   timeout=self.timeout
+                                   )
+        except:
+            raise
+
+
+        try:
+            returned_data = json.loads(result.text)
+            logger.info('Bank status: ' + str(result.status_code))
+            logger.info('Bank returns: ' + result.text)
+        except:
+            returned_data = None
+            logger.info('Bank status: ' + str(result.status_code))
+            logger.info('Bank returns None')
+
+
+        return returned_data
+
+    def cancelOnlineTransaction(self, transactionid):
+        logger.info("Cancel online payment for invoices with transactionid %s" % str(transactionid))
+
+
+        url = self.url + '/' + ONLINETRANSACTIONS_URL + '/cancel/' + transactionid + '/'
+        logger.debug('cancelOnlineTransaction url: %s' % url)
+        headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
+
+        logger.info('Headers: ' + str(headers))
+
+        try:
+            result = requests.post(url,
+                                   headers=headers,
+                                   auth=self.auth,
+                                   timeout=self.timeout
+                                   )
+        except:
+            raise
+
+
+        try:
+            returned_data = json.loads(result.text)
+            logger.info('Bank status: ' + str(result.status_code))
+            logger.info('Bank returns: ' + result.text)
+        except:
+            returned_data = None
+            logger.info('Bank status: ' + str(result.status_code))
+            logger.info('Bank returns None')
+
 
         return returned_data
