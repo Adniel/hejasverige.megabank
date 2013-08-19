@@ -23,11 +23,8 @@
       handler="hejasverige.megabank.setuphandler.importVarious">
     <!--depends name="rolemap"/-->
   </genericsetup:importStep>  
-
   <includeDependencies package="." />
 
-  <include package="five.grok" />
-  <include file="permissions.zcml" />
 
   <five:registerPackage package="." initialize=".initialize" />
 
@@ -36,8 +33,11 @@
   <interface interface="hejasverige.megabank.interfaces.IMyAccountFolder" />
 
   <include package="plone.app.registry" />
+  <include package="collective.beaker" />
+  <include package="five.grok" />
   <include package=".browser" />
-
+  <include file="permissions.zcml" />
+  
   <browser:resourceDirectory
     name="hejasverige.megabank"
     directory="static" />
