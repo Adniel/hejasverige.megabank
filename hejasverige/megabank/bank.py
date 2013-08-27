@@ -321,7 +321,7 @@ class Bank():
         if outgoing:
             url = url + '&outgoing=' + str(outgoing)
 
-        logger.debug('getInvoices url: %s' % url)
+        logger.info('getInvoices url: %s' % url)
 
         r = requests.get(url, auth=self.auth,
                          timeout=self.timeout)
@@ -330,29 +330,29 @@ class Bank():
 
         if r.text:
             try:
-                logger.debug('Loading returned data as JSON')                
+                logger.info('Loading returned data as JSON')                
                 payload = json.loads(r.text.encode('ascii', 'ignore'))
                 #    import pdb; pdb.set_trace()
-
-                logger.debug('Updating date format in JSON structure')                
-                items = []
-                p = re.compile('/Date\(')
-                for item in payload:
-                    for k in item.keys():
-                        m = p.match(str(item[k]))
-                        if m:
-                            item[k] = datetime.datetime(1970, 1, 1) \
-                                + datetime.timedelta(milliseconds=int(re.findall(r'\d+'
-                                    , item[k])[0])) \
-                                + datetime.timedelta(hours=int((re.findall(r'\d+'
-                                    , item[k])[1])[:2]))
-
-                    items.append(item)
-
-                return items
             except Exception, e:
                 logger.exception('Returned data is not JSON: %s' % str(e))
                 return []
+
+            logger.info('Updating date format in JSON structure')                
+            items = []
+            p = re.compile('/Date\(')
+            for item in payload:
+                for k in item.keys():
+                    m = p.match(str(item[k]))
+                    if m:
+                        item[k] = datetime.datetime(1970, 1, 1) \
+                            + datetime.timedelta(milliseconds=int(re.findall(r'\d+'
+                                , item[k])[0])) \
+                            + datetime.timedelta(hours=int((re.findall(r'\d+'
+                                , item[k])[1])[:2]))
+
+                items.append(item)
+
+            return items
         else:
             logger.info('No invoices in payload')
             return []

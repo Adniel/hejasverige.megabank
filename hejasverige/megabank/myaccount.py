@@ -330,5 +330,5 @@ class UpdateInvoiceView(grok.View):
             utils = getToolByName(self, "plone_utils")
             utils.addPortalMessage(_(result), portal_message_type)
 
-            url = self.context.absolute_url
+            url = self.context.absolute_url()
             return self.request.response.redirect(url)

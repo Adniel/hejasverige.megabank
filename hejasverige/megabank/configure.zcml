@@ -22,13 +22,12 @@
   <include package=".browser" />
   <include file="permissions.zcml" />
 
-   <genericsetup:importStep
+   <!--genericsetup:importStep
       name="megabank-various"
       title="Additional Heja Sverige Megabank setup"
       description="Heja Sverige Megabank site configuration"
       handler="hejasverige.megabank.setuphandler.importVarious">
-    <!--depends name="rolemap"/-->
-  </genericsetup:importStep>  
+  </genericsetup:importStep-->  
 
   <includeDependencies package="." />
 

@@ -73,8 +73,8 @@
 
     </script>
     <h1 class="documentFirstHeading">Betala</h1>
-    <p class="documentDescription">Välj betalmedel</p>
-    <p>Om du fyllt i ett kortbelopp när du trycker på Betala kommer du att skickas till vår betalningsförmedlare för att välja betalmetod. Om du använder poäng på ditt Heja Sverige-konto kommer dessa att räknas av från ditt konto direkt.</p>
+    <p class="documentDescription">Välj betalsätt</p>
+    <p>Välj hur du vill betala dina fakturor. Du kan betala med Heja Sverige-pengar eller med ditt betalkort. Du kan själv ange hur mycket av dina Heja Sverige pengar du vill använda till betalningen, pengarna dras direkt från ditt Heja Sverige-konto. Fattas det Heja Sverige-pengar så läggs mellanskillnaden på ditt betalkort. Om du valt att betala någon summa via ditt betalkort så kommer du till vår betalningsförmedlare när du klickar på ”Betala”. </p>
     <!--span tal:content="view/session" /-->
     <p>Betalning av fakturor:
     <tal:invoices tal:repeat="item python:view.session().get('megabank.selected_invoices')">
@@ -104,6 +104,7 @@
       </tr>
       <tr>
         <td>
+          <label for="points_amount">Dra från ditt Heja Sverige-konto:</label>          
         </td>
         <td>
           <input name="points_amount" id="points_amount" value="0"/>
@@ -111,7 +112,7 @@
       </tr>
       <tr>
         <td>
-          <label for="card_amount">Belopp att betala via bank/kort:</label>
+          <label for="card_amount">Belopp att betala via betalkort:</label>
         </td>
         <td>
           <input name="card_amount" id="card_amount" tal:attributes="value info/amount_to_pay"/>

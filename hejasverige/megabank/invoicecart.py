@@ -35,6 +35,12 @@ class InvoiceCart(grok.View):
             session.save()
             return 'Test key stored...'
 
+        if 'testsessionkey2' in self.request:
+            session['testsessionkey2'] = dict(key1='Hey', key2='Boy')
+            session.save()
+            return 'Test key2 stored...'
+
+
         if 'remove' in self.request:
             session.delete()
             session.invalidate()
@@ -43,7 +49,7 @@ class InvoiceCart(grok.View):
         if session is None:
             return 'No session initiatied'
         if 'testsessionkey' in session:
-            return 'Found test key: ' + str(session['testsessionkey'])
+            return 'Found session: ' + str(session)
         else:
             return 'Did not find testsessionkey in session...'
 
