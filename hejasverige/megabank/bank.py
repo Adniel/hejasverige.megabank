@@ -18,6 +18,9 @@ from hejasverige.megabank.config import INVOICES_URL
 from hejasverige.megabank.config import ONLINETRANSACTIONS_URL
 from hejasverige.megabank.interfaces import IMegabankSettings
 
+from collective.beaker.interfaces import ISession
+from hejasverige.megabank.config import SessionKeys
+
 import json
 
 import datetime
@@ -72,6 +75,12 @@ class Bank():
         settings = registry.forInterface(IMegabankSettings)
 
         return settings
+
+    def _invalidate_session_account_info(self):
+        # Invalidate session account info
+        session = ISession(self.request, None)
+        session[sessionssionKeys.account_info] == None
+        session.save()            
 
     def convertJsonDictionaryDates(self, jsondictionary):
         #import pdp; pdb.trace()
@@ -130,8 +139,12 @@ class Bank():
         accounts_url = self.url + '/' + ACCOUNTS_URL + '/' + personalid + '/'
         logger.debug('Using url: %s ' % accounts_url)
 
-        r = requests.get(accounts_url, auth=self.auth,
-                         timeout=self.timeout)
+        try:
+            r = requests.get(accounts_url, auth=self.auth,
+                             timeout=self.timeout)
+        except Exception, ex:
+            logger.exception('Unable to get account info from megabank: %s' % str(ex))
+            return []
 
         if r.text:
             logger.info('Account Info: ' + r.text)
@@ -150,8 +163,12 @@ class Bank():
 
         logger.debug('Using url: %s ' % accounts_url)
 
-        r = requests.delete(accounts_url, auth=self.auth,
-                         timeout=self.timeout)
+        try:
+            r = requests.delete(accounts_url, auth=self.auth,
+                                timeout=self.timeout)
+        except Exception, ex:
+            logger.exception('Unable to delete account info from megabank: %s' % str(ex))
+            return []
 
         if r.text:
             logger.info('Delete account returned: ' + r.text)
@@ -215,35 +232,33 @@ class Bank():
         #    "PersonalID":"String content",
         #    "Temporary":true
         #}
-
         # If a context is provided. Try to return values from a cookie.
         # If no cookie is found collect new values
         if context:
-            cookie = context.request.get('__myaccountinfo', None)
-            if not cookie:
-                logger.debug('__myaccountinfo cookie did not exist. Create new cookie')
-                value = self.getAccountFromMegabank(personalid)
-                context.request.response.setCookie('__myaccountinfo', value, path='/', expires=self.setExpiration(self.cachetimeout))        
-                #cookie = context.request.response.cookies.get('__myaccountinfo', None)
-                return value
-            else:
-                #import pdb; pdb.set_trace()
-                import ast
-                cookie = ast.literal_eval(cookie)
-                logger.debug('__myaccountinfo cookie did exist. Checking cookie content.')
-                if cookie:
-                    if cookie.get('AccountNumber', None):
-                        logger.debug('Cookie was ok. Returning paistry.')
-                        return cookie
+            session = ISession(context.request, None)
+            if session:
+                # import pdb; pdb.set_trace()
+                try: 
+                    account_info = session[SessionKeys.account_info]
 
-                logger.debug('Cookie was corrupt. Calling bank again for new cookie.')
-                value = self.getAccountFromMegabank(personalid)
-                context.request.response.setCookie('__myaccountinfo', value, path='/', expires=self.setExpiration(self.cachetimeout))        
-                return value
+                    # is there content in key?
+                    if not account_info:
+                        raise KeyError
 
-                
-        else:
-            return self.getAccountFromMegabank(personalid)
+                    # check if session cache is expired
+                    if datetime.datetime.now() > (account_info['_created'] + datetime.timedelta(seconds=self.cachetimeout)):
+                        raise KeyError
+
+                except KeyError, ex:
+                    account_info = self.getAccountFromMegabank(personalid)
+                    account_info['_created'] = datetime.datetime.now()
+                    session[SessionKeys.account_info] = account_info
+                    session.save()
+
+                return session[SessionKeys.account_info]
+
+
+        return self.getAccountFromMegabank(personalid)
 
 
     def getTransactions(self, personalid, transactionid=None, startdate=None, enddate=None):
@@ -390,6 +405,8 @@ class Bank():
         result = requests.put(url, data=payload, headers=headers, auth=self.auth,
                             timeout=self.timeout)
         logger.debug('Payload %s' % result.text)
+
+
         return result
 
     def createInvoice(self, obj):
@@ -551,6 +568,8 @@ class Bank():
             logger.info('Bank status: ' + str(result.status_code))
             logger.info('Bank returns None')
 
+
+        self._invalidate_session_account_info()
 
         return returned_data
 

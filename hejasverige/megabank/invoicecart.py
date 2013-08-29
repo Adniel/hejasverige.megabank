@@ -2,6 +2,7 @@
 
 from five import grok
 from collective.beaker.interfaces import ISession
+from beaker.cache import cache_region
 from plone.app.layout.navigation.interfaces import INavigationRoot
 from hejasverige.megabank.interfaces import IMyAccountFolder
 from hejasverige.megabank.session import SessionKeys
@@ -14,6 +15,7 @@ from hejasverige.megabank import _
 from zExceptions import Forbidden
 from zope.component import getMultiAdapter
 from hejasverige.megabank.config import MEGABANKVIEW_URL
+import DateTime
 
 import logging
 logger = logging.getLogger(__name__)
@@ -21,14 +23,22 @@ logger = logging.getLogger(__name__)
 grok.templatedir("templates")
 
 
+class TestCache(grok.View):
+
+    grok.context(INavigationRoot)
+    
+    @cache_region('short')
+    def render(self):
+        #import pdb; pdb.set_trace()
+        now = str(DateTime.DateTime())
+        return now
+
+
 class InvoiceCart(grok.View):
     grok.context(INavigationRoot)
 
     def render(self):
         session = ISession(self.request, None)
-
-        if session is None:
-            return None
 
         if 'testsessionkey' in self.request:
             session['testsessionkey'] = dict(key1='Hey', key2='Boy')

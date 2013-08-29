@@ -35,9 +35,9 @@ def getAccount(event):
         try:
             result = bank.getAccount(personal_id)
         except Exception, ex:
-            logger.error('Unable to access the bank. User account could not be checked: %s' % (str(ex)))
+            logger.exception('Unable to access the bank. User account could not be checked: %s' % (str(ex)))
             # problems accessing the bank
-            pass
+            #pass
         else:
             if not result:
                 # user had no account in the bank
