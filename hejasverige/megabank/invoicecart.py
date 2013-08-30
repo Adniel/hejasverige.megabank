@@ -5,7 +5,7 @@ from collective.beaker.interfaces import ISession
 from beaker.cache import cache_region
 from plone.app.layout.navigation.interfaces import INavigationRoot
 from hejasverige.megabank.interfaces import IMyAccountFolder
-from hejasverige.megabank.session import SessionKeys
+from hejasverige.megabank.config import SessionKeys
 from hejasverige.content.interfaces import IMyPages
 from hejasverige.megabank.bank import Bank
 from plone import api
