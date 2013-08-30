@@ -16,7 +16,7 @@ from Products.CMFCore.utils import getToolByName
 from hejasverige.content.interfaces import IMyPages
 from plone.app.layout.navigation.interfaces import INavigationRoot
 from hejasverige.megabank import _
-from hejasverige.megabank.session import SessionKeys
+from hejasverige.megabank.config import SessionKeys
 from collective.beaker.interfaces import ISession
 from hejasverige.content.invoice import IInvoice
 from hejasverige.megabank.config import MEGABANKVIEW_URL
