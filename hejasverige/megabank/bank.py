@@ -20,6 +20,7 @@ from hejasverige.megabank.interfaces import IMegabankSettings
 
 from collective.beaker.interfaces import ISession
 from hejasverige.megabank.config import SessionKeys
+from zope.component.hooks import getSite
 
 import json
 
@@ -78,9 +79,10 @@ class Bank():
 
     def _invalidate_session_account_info(self):
         # Invalidate session account info
-        session = ISession(self.request, None)
-        session[sessionssionKeys.account_info] == None
-        session.save()            
+        portal = getSite()
+        session = ISession(portal.REQUEST, None)
+        session[SessionKeys.account_info] == None
+        session.save()
 
     def convertJsonDictionaryDates(self, jsondictionary):
         #import pdp; pdb.trace()

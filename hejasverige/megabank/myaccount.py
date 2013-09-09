@@ -258,7 +258,7 @@ class TransactionDetailView(grok.View):
         pid = get_pid()
         logger.info('No pid')
         if pid and self.transactionid:
-            bank = get_bank(logger)
+            bank = get_bank()
             if bank:
                 try:
                     self.transactiondetails = bank.getTransactionDetails(personalid=pid, transactionid=self.transactionid)
@@ -330,5 +330,5 @@ class UpdateInvoiceView(grok.View):
             utils = getToolByName(self, "plone_utils")
             utils.addPortalMessage(_(result), portal_message_type)
 
-            url = self.context.absolute_url()
+            url = self.context.absolute_url  #  was with ()
             return self.request.response.redirect(url)
