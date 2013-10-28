@@ -164,7 +164,7 @@
             $(document).ready(function() { 
               jQuery(".invoiceCheckbox").click(function() {
                  var $checkbox = jQuery(this);
-                 var checkboxData = "checkboxvalue=" + $checkbox.is(":checked") + "&checkboxid=" + $checkbox.attr("id") + "&amount=" + $checkbox.attr("data-amount") + "&invoiceno=" + $checkbox.attr("data-invoiceno");
+                 var checkboxData = "checkboxvalue=" + $checkbox.is(":checked") + "&checkboxid=" + $checkbox.attr("id") + "&amount=" + $checkbox.attr("data-amount") + "&invoiceno=" + $checkbox.attr("data-invoiceno") + "&description=" + $checkbox.attr("data-description");
                  var url = $('#myForm').attr('action');
                  //alert(checkboxData)
 
@@ -205,7 +205,7 @@
                 <tbody>
                 <tal:invoices tal:repeat="item batch">
                     <tr cellpadding="10" class="odd" tal:define="oddrow repeat/item/odd" tal:attributes="class python:oddrow and 'even' or 'odd'" >
-                      <td><input type="checkbox" id="#" tal:attributes="id string:${item/ID};data-invoiceno string:${item/ExternalID};data-amount string:${item/Amount};checked python:view.id_in_session(item.get('ID', None))"  class="invoiceCheckbox"/></td>
+                      <td><input type="checkbox" id="#" tal:attributes="id string:${item/ID};data-invoiceno string:${item/ExternalID};data-amount string:${item/Amount};data-description string:${item/Description};checked python:view.id_in_session(item.get('ID', None))"  class="invoiceCheckbox"/></td>
                       <td tal:content="item/ExternalID | nothing" />
                       <td>
                       <span tal:content="item/Name | nothing" /> (

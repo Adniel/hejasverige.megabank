@@ -194,8 +194,12 @@ class Bank():
 
         logger.debug('Using url: %s ' % accounts_url)
 
-        r = requests.post(accounts_url, auth=self.auth,
+        try:
+            r = requests.post(accounts_url, auth=self.auth,
                          timeout=self.timeout)
+        except Exception, ex:
+            logger.exception("Exception occured when creating account: %s" % str(ex))
+            return []
 
         if r.text:
             logger.info('Create account returned: ' + r.text)

@@ -223,6 +223,9 @@ class StoreMarkedInvoices(grok.View):
         if 'invoiceno' in self.request:
             logger.info('Invoiceno value:' + self.request['invoiceno'])
 
+        if 'description' in self.request:
+            logger.info('Description value:' + self.request['description'])
+
         if 'Amount' in self.request:
             logger.info('Amount value:' + self.request['amount'])
         # Update session dictionary
@@ -238,7 +241,7 @@ class StoreMarkedInvoices(grok.View):
             session[SessionKeys.selected_amount] = session[SessionKeys.selected_amount] + amount
 
             if not self.request['checkboxid'] in [l.get('id') for l in session[SessionKeys.selected_invoices]]:
-                session[SessionKeys.selected_invoices].append(dict(id=self.request['checkboxid'], amount=amount, invoiceno=self.request['invoiceno']))
+                session[SessionKeys.selected_invoices].append(dict(id=self.request['checkboxid'], description=self.request['description'], amount=amount, invoiceno=self.request['invoiceno']))
                 logger.debug(session[SessionKeys.selected_invoices])
         else:
             session[SessionKeys.selected_amount] = session[SessionKeys.selected_amount] - amount
