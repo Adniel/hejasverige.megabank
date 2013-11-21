@@ -146,7 +146,7 @@ class Bank():
                              timeout=self.timeout)
         except Exception, ex:
             logger.exception('Unable to get account info from megabank: %s' % str(ex))
-            return []
+            return {}
 
         if r.text:
             logger.info('Account Info: ' + r.text)
@@ -154,10 +154,10 @@ class Bank():
                 payload = json.loads(r.text)
             except Exception, ex:
                 logger.exception('Unable to read bank response as JSON. Exception: %s' % str(ex))
-                payload = []
+                payload = {}
             return payload
 
-        return []
+        return {}
 
     def deleteAccount(self, personalid):
         logger.debug('deleteAccount(self, %s)' % str(personalid))
@@ -243,6 +243,7 @@ class Bank():
         if context:
             session = ISession(context.request, None)
             if session:
+                account_info = {}
                 # import pdb; pdb.set_trace()
                 try: 
                     account_info = session[SessionKeys.account_info]
