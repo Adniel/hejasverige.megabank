@@ -90,7 +90,7 @@
 <tal:if  condition="view/hasConnectionError">
     <div>Det gick inte att kontakta banken. Kontohändelser kan inte visas.</div>
 </tal:if> 
-<tal:elseif condition="not: view/hasConnectionError">     
+<tal:elseif condition="not:view/hasConnectionError">     
     <tal:transactions condition="view/hasTransactions">
       <div tal:define="list view/transactions;
                    Batch python:modules['Products.CMFPlone'].Batch;
@@ -132,7 +132,21 @@
       </div>
     </tal:transactions>
     <tal:transactions condition="not:view/hasTransactions">
-      <div>Det finns inga kontohändelser</div>
+
+          <table cellpadding="10" border="0" class="listing nosort messageListing">
+              <thead>
+                <th />
+                <th>Id</th>
+                <th>Datum</th>
+                <th>Tid</th>
+                <th>Beskrivning</th>
+                <th>Belopp</th>
+                <th>&nbsp;&nbsp;</th>
+              </thead>
+              <tbody>
+                <td colspan="7">Det finns inga kontohändelser</td>
+              </tbody>
+            </table>
     </tal:transactions>
 </tal:elseif>
 
@@ -233,7 +247,22 @@
         </div>
       </tal:transactions>
       <tal:transactions condition="not:view/hasInvoices">
-        <div>Det finns inga fakturor</div>
+            <table cellpadding="0" border="0" class="listing nosort messageListing">
+                <thead>
+                  <th></th>
+                  <th>Faktnr</th>
+                  <th>Från</th>
+                  <!--th>Persnr</th-->
+                  <th>Belopp</th>
+                  <th>Inkommen</th>
+                  <th>Betaldag</th>
+                  <th>&nbsp;&nbsp;</th>
+                </thead>
+                <tbody>
+
+                  <td colspan="7">Det finns inga fakturor</td>
+                </tbody>
+            </table>
       </tal:transactions>
   </tal:elseif>
 
